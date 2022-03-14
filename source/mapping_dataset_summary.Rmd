@@ -141,7 +141,7 @@ rawdata <- read_excel(here("data", "mapping_dataset_reconciled.xlsx"), sheet = 1
 #### Table S2
 List of articles excluded at full-text screening, with main reasons for exclusion.     
 ```{r data table excluded articles}
-#table(rawdata$"exclusion_reason") #table of exclusion resons for the excluded studies
+#table(rawdata$"exclusion_reason") #table of exclusion reasons for the excluded studies
 
 #remove 46 included studies and select a few relevant columns
 rawdata_excl <- rawdata %>% filter(Included == "0") %>% select(c("First author's family name:", "Publication year:", "Paper's title:", "Journal name:" , "Article doi:", "Exclusion reason")) 
@@ -216,13 +216,13 @@ count(rawdata_incl, Year) %>%
 #        device = cairo_pdf)
 ```
 
-#### Top 20 publication journals
 
-A barplot of the counts  of publications in different journals, with top 20 shown sorted by descending frequency order.   
+#### Top publication journals
 
-```{r plot journal, fig.dim = c(16, 14)}
+A barplot of the counts  of publications in different journals, withjournals with >2 included papersshown sorted by descending frequency order.   
+```{r plot journal, fig.dim = c(8, 4)}
 count(rawdata_incl, Journal) %>%
-  arrange(n) %>% top_n(20) %>%
+  arrange(n) %>% top_n(9) %>%
   mutate(class = factor(Journal, levels = Journal)) %>%
   ggplot(aes(x = class, y = n)) +
   geom_bar(stat = "identity", position = "dodge") +
@@ -232,7 +232,7 @@ count(rawdata_incl, Journal) %>%
   labs(x = "", y = "Article count", title = "Where it was published?")
 ```
 
-To infer discipline / audience type we categorized publicatio journals as: computer science / technology, ecology, multidisciplinary. 
+To infer discipline / audience type we categorized publication journals as: computer science / technology, ecology, multidisciplinary. 
 
 ```{r journal discipline, include = FALSE}
 # classify journals into comp.sci vs. ecology journals
@@ -248,19 +248,76 @@ rawdata_incl %>%
   count(Journal_discipline) %>%
   arrange(n) %>%
   mutate(class = factor(Journal_discipline, levels = Journal_discipline)) %>%
-  ggplot(aes(x = class, y = n)) +
+  ggplot(aes(x = class, y = n, fill = Journal_discipline)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 1) +
   coord_flip() +
-  scale_y_continuous(breaks = seq(0, 150, 10)) +
+  scale_y_continuous(breaks = seq(0, 200, 50)) +
+  scale_fill_manual(values = c("#E57E7E", "#C3E57E", "#E5B17E")) + 
+  theme(legend.position = "none") + 
   labs(x = "", y = "Article count", title = "What disciplines journals represent?")
+```
+
+A barplot of the counts  of publications in different journals, withjournals with >2 included papersshown sorted by descending frequency order, now with journals colored by discipline.  
+
+```{r plot journal with discipline colors, fig.dim = c(8, 4)}
+# note: colors are added manually
+
+count(rawdata_incl, Journal) %>%
+  arrange(n) %>% top_n(9) %>%
+  mutate(Journals = factor(Journal, levels = Journal)) %>%
+  ggplot(aes(x = Journals, y = n, fill = Journals)) +
+  geom_bar(stat = "identity", position = "dodge") +
+ # geom_text(aes(label = scales::comma(n)), hjust = 0, nudge_y = 1) +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 20, 1)) +
+  scale_fill_manual(values = c("#E57E7E", "#E57E7E", "#C3E57E", "#E57E7E", "#E57E7E", "#C3E57E","#E57E7E", "#C3E57E", "#C3E57E")) + 
+  theme(legend.position = "none") + 
+  labs(x = "", y = "Article count", title = "Where it was published?")
 ```
 
 #### Number of species / animal classes used 
 
 Most data sets have prespecified number of animal species / classes present. Class can represent a species or a higher taxonomic group, such as genus, family, order, super-order, etc. (even "animals" can ba a class). Classes of non-animal objects (e.g. humans, vehicles) were not counted. When more than one dataset was used, the number was extracted for the biggest dataset.     
 
-As a histogram with numbers of classes on a log x-scale due to strong right-skew in the data.   
+A brief summary statistics on the number of species.
+
+```{r prep Species_number summary, fig.dim = c(8, 4)}
+#table(rawdata_incl$Species_number == "NA") #13 values of NA = no information in the paper
+#table(as.integer(rawdata_incl$Species_number), useNA = "always")
+
+# summarise Species_number column
+rawdata_incl %>% 
+  filter(Species_number != "NA") %>% 
+    mutate(Species_number_NUM = as.numeric(Species_number)) %>% 
+    summarise(min = min(as.numeric(Species_number_NUM)),
+              max = max(as.numeric(Species_number_NUM)),
+              mean = mean(Species_number_NUM),
+              sd = sd(Species_number_NUM),
+              median = median(Species_number_NUM),
+              n = n()
+            )
+```
+
+#### Table S3
+Papers with > 100 species/animal classes.
+
+```{r prep Species_number over 100}
+
+#Filter studies and select a few relevant columns
+rawdata_incl %>% 
+  filter(Species_number != "NA") %>% 
+  mutate(Species_number_NUM = as.integer(Species_number)) %>% 
+  filter(Species_number_NUM > 100)  %>% select(c("Author", "Year", "Title", "Journal" , "DOI", "Species_number", "Studied_species_type")) -> rawdata_top10size
+
+#dim(rawdata_top10size) #11 articles, 7 columns
+
+#make a table of excluded  studies
+t3 <- rawdata_top10size %>%   DT::datatable(rownames = FALSE, width = "100%", options = list(dom = 't', scrollY = '700px', pageLength = 20))
+t3
+```
+
+A histogram with numbers of classes on a log x-scale due to strong right-skew in the data.   
 
 ```{r plot Species_number histogram, fig.dim = c(8, 4)}
 #table(rawdata_incl$Species_number == "NA") #13 values of NA = no information in the paper
@@ -297,7 +354,7 @@ count(rawdata_incl, Species_number) %>%
 
 For studies focusing on a single animal species, we extracted species name to investigate which particular species were most popular (subspecies names are omitted from the plot labels).       
 
-```{r plot study species one, fig.dim = c(8, 6)}
+```{r prep study species one}
 #table(rawdata_incl$Study_species != "many", useNA = "always") #59 values of species name for one-species studies, 133 with more than one species /animal classes used
 #table(rawdata_incl$Study_species, useNA = "always")
 
@@ -311,7 +368,10 @@ rawdata_incl$Study_species <- gsub("Sousa chinensis taiwanensis", "Sousa chinens
 rawdata_incl$Study_species <- gsub("Ursus arctos maritimus", "Ursus arctos", rawdata_incl$Study_species)
 rawdata_incl$Study_species <- gsub("Pusa hispida saimensis", "Pusa hispida", rawdata_incl$Study_species)
 rawdata_incl$Study_species <- gsub("Phoca hispida saimensis", "Pusa hispida", rawdata_incl$Study_species)
+rawdata_incl$Study_species <- gsub("Chen caerulescens", "Anser caerulescens", rawdata_incl$Study_species)
+```
 
+```{r plot study species one, fig.dim = c(8, 6)}
 rawdata_incl %>% filter(Species_number == "1") %>% 
   filter(Study_species != "unclear") %>% 
   count(Study_species) %>%
@@ -325,6 +385,38 @@ rawdata_incl %>% filter(Species_number == "1") %>%
   labs(x = "", y = "Article count", title = "Most popular species in single-species studies?")
 ```
 
+Plot with color coding biological groups.   
+
+```{r plot study species one recolor, fig.dim = c(8, 6)}
+#Studied_species_type custom colors: "amphibians" = "#009292", "birds" = "#B66DFF","fishes" = "#006DDB", "mammals" = "#FF6DB6", "other" = "#924900", "reptiles" = "#490092", "unclear" = "#DB6D00")# #assign colors to biological groups, https://r-charts.com/color-palettes/ using paletteer_d("colorBlindness::paletteMartin")
+
+#table(rawdata_incl$Study_species, rawdata_incl$Studied_species_type)
+
+ rawdata_incl %>% filter(Species_number == "1") %>% 
+   filter(Study_species != "unclear") %>% select(Study_species, Studied_species_type) %>%
+   unique() %>% mutate(species_cols = recode(Studied_species_type, "amphibians" = "#009292", "birds" = "#B66DFF","fishes" = "#006DDB", "mammals" = "#FF6DB6", "other" = "#924900", "reptiles" = "#490092", "unclear" = "#DB6D00")) -> species_colors_table
+
+rawdata_incl %>% filter(Species_number == "1") %>% 
+  filter(Study_species != "unclear") %>% 
+  count(Study_species) %>%
+  arrange(n) %>% left_join(species_colors_table, by = "Study_species") %>% pull(species_cols) -> species_cols
+
+rawdata_incl %>% filter(Species_number == "1") %>% 
+  filter(Study_species != "unclear") %>% 
+  count(Study_species) %>%
+  arrange(n) %>%
+  mutate(class = factor(Study_species, levels = Study_species), taxa = as.factor(species_cols)) %>%
+  ggplot(aes(x = class, y = n, fill = taxa)) +
+  geom_bar(aes(fill = taxa), stat = "identity", position = "dodge") +
+  scale_fill_manual(labels = c("fishes", "reptiles", "birds", "mammals"), values = c("#006DDB", "#490092", "#B66DFF", "#FF6DB6")) +
+ # geom_text(aes(label=scales::comma(n)), hjust = 0, nudge_y = 1) +
+  theme(legend.position = "bottom") +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 20, 1)) +
+  labs(x = "", y = "Article count", title = "Most popular species in single-species studies?", fill = "biological group:")
+```
+
+
 #### Types of animals used    
 
 Most popular types of animals as represented by commonly used "biological" categories. One study could be coded as studging one or more categories of animals, e.g. both mammals and birds. However, distribution of number of species within multi-category studies was often not even, e.g. a commonly used Serengeti dataset from tanzania is dominated by large mammals with only a few species of large birds considered in analyses.    
@@ -335,7 +427,6 @@ Most popular types of animals as represented by commonly used "biological" categ
 Studied_species_type_sep <- separate_rows(rawdata_incl, Studied_species_type, sep = ", ") #split rows with multiple values
 #table(Studied_species_type_sep$Studied_species_type, useNA = "always") #1 NA
 Studied_species_type_sep$Studied_species_type <- replace_na(Studied_species_type_sep$Studied_species_type, "unclear") #fix NA
-
 Studied_species_type_sep$Studied_species_type <- as.factor(Studied_species_type_sep$Studied_species_type)
 
 Studied_species_type_sep %>% 
@@ -343,11 +434,13 @@ Studied_species_type_sep %>%
   count(Studied_species_type) %>%
   arrange(n) %>%
   mutate(class = factor(Studied_species_type, levels = Studied_species_type)) %>%
-  ggplot(aes(x = class, y = n)) +
+  ggplot(aes(x = class, y = n, fill = class)) +
   geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values=rev(c("#FF6DB6", "#B66DFF", "#006DDB", "#490092", "#009292", "#DB6D00", "#924900"))) +
   geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 1) +
+  ylim(c(0,150)) +
   coord_flip() +
-  scale_y_continuous(breaks = seq(0, 150, 10)) +
+  theme(legend.position = "none") +
   labs(x = "", y = "Article count", title = "What types of animals were studied?", caption = "Note: some studies used more than one")
 
 ```
@@ -705,7 +798,27 @@ rawdata_incl %>%
   ggplot(aes(x = Year, y = n, fill = Journal_discipline)) + 
   geom_area() +
   theme(legend.position = "bottom", legend.direction = "vertical") + 
+  scale_fill_manual(values = c("#E5B17E", "#C3E57E", "#E57E7E"))+ 
   labs(x = "", y = "Article count", title = "Journal discipline by year")
+```
+
+##### Year vs image source type stacked area chart
+
+A stacked area plot showing yearly changes in the types of images used for analyses.     
+
+```{r plot years and image types, fig.dim = c(8, 4)}
+#Image_source_type_sep <- separate_rows(rawdata_incl, Image_source_type, sep = ", ") #split rows with multiple values
+#Image_source_type_sep$Image_source_type <- as.factor(Image_source_type_sep$Image_source_type)
+#table(Image_source_type_sep$Image_source_type, useNA = "always") #1 NA
+
+Image_source_type_sep %>% 
+  filter(!is.na(Image_source_type)) %>% 
+  filter(Image_source_type != "other / unclear") %>%   
+  count(Image_source_type, Year) %>%
+  ggplot(aes(x = Year, y = n, fill = Image_source_type)) + 
+  geom_area() +
+  theme(legend.position = "bottom", legend.direction = "vertical") + 
+  labs(x = "", y = "Article count", title = "Image source type by year")
 ```
 
 #### Individual recognition by species
@@ -781,7 +894,7 @@ myspecies_counts <- myspecies_data$count_studies
 names(myspecies_counts) <- myspecies_data$Study_species #add row names
 
 #set colors for the biological groups information
-color_bgroup <- recode(myspecies_data$biological_group, "fishes" = "#00A1D5", "mammals" = "#325F8C")
+color_bgroup <- recode(myspecies_data$biological_group, "fishes" = "#009292", "mammals" = "#FF6DB6")
 #assign colors to biological groups, https://r-charts.com/color-palettes/
 
 names(color_bgroup) <- myspecies_data$Study_species #make it a named vector
@@ -826,19 +939,19 @@ phydataplot(myspecies_counts, tree, offset = 60, scaling = 5, border = "white", 
 text(84, 14, "Article count", cex=1.1) #col = "#325F8C", 
 text(21, 14, "Species", cex=1.1) #col = "#325F8C", 
 title("Individual recognition (re-identification)")
-add_phylopic_base(Salmo, x = 60, y = 13, ysize = 0.8, xsize = 8, color = "#00A1D5", alpha = 0.6)
-add_phylopic_base(Panthera, x = 60, y = 12, ysize = 1, xsize = 12, color = "#325F8C", alpha = 0.7)
-add_phylopic_base(Pusa,x = 60, y = 11, ysize = 1, xsize = 10, color = "#325F8C", alpha = 0.7)
-add_phylopic_base(Ailuropoda, x = 60, y = 10, ysize = 1, xsize = 6, color = "#325F8C", alpha = 0.7)
-add_phylopic_base(Ursus, x = 60, y = 9, ysize = 1, xsize = 11, color = "#325F8C", alpha = 0.7)
-add_phylopic_base(Eubalaena, x = 60, y = 8, ysize = 1, xsize = 12, color = "#325F8C", alpha = 0.7)
-add_phylopic_base(Megaptera, x = 60, y = 7, ysize = 1, xsize = 10, color = "#325F8C", alpha = 0.7)
-add_phylopic_base(Sousa, x = 60, y = 6, ysize = 1, xsize = 10, color = "#325F8C", alpha = 0.7)
-add_phylopic_base(Cephalorhynchus, x = 60, y = 5, ysize = 1, xsize = 12, color = "#325F8C", alpha = 0.7)
-add_phylopic_base(Grampus, x = 60, y = 4, ysize = 1, xsize = 12, color = "#325F8C", alpha = 0.7)
-add_phylopic_base(Gorilla, x = 60, y = 3, ysize = 1, xsize = 6, color = "#325F8C", alpha = 0.7)
-add_phylopic_base(Pan, x = 60, y = 2, ysize = 0.8, xsize = 6, color = "#325F8C", alpha = 0.7)
-add_phylopic_base(Macaca, x = 60, y = 1, ysize = 1, xsize = 8, color = "#325F8C", alpha = 0.7)
+add_phylopic_base(Salmo, x = 60, y = 13, ysize = 0.8, xsize = 8, color = "#009292", alpha = 0.6)
+add_phylopic_base(Panthera, x = 60, y = 12, ysize = 1, xsize = 12, color = "#FF6DB6", alpha = 0.7)
+add_phylopic_base(Pusa,x = 60, y = 11, ysize = 1, xsize = 10, color = "#FF6DB6", alpha = 0.7)
+add_phylopic_base(Ailuropoda, x = 60, y = 10, ysize = 1, xsize = 6, color = "#FF6DB6", alpha = 0.7)
+add_phylopic_base(Ursus, x = 60, y = 9, ysize = 1, xsize = 11, color = "#FF6DB6", alpha = 0.7)
+add_phylopic_base(Eubalaena, x = 60, y = 8, ysize = 1, xsize = 12, color = "#FF6DB6", alpha = 0.7)
+add_phylopic_base(Megaptera, x = 60, y = 7, ysize = 1, xsize = 10, color = "#FF6DB6", alpha = 0.7)
+add_phylopic_base(Sousa, x = 60, y = 6, ysize = 1, xsize = 10, color = "#FF6DB6", alpha = 0.7)
+add_phylopic_base(Cephalorhynchus, x = 60, y = 5, ysize = 1, xsize = 12, color = "#FF6DB6", alpha = 0.7)
+add_phylopic_base(Grampus, x = 60, y = 4, ysize = 1, xsize = 12, color = "#FF6DB6", alpha = 0.7)
+add_phylopic_base(Gorilla, x = 60, y = 3, ysize = 1, xsize = 6, color = "#FF6DB6", alpha = 0.7)
+add_phylopic_base(Pan, x = 60, y = 2, ysize = 0.8, xsize = 6, color = "#FF6DB6", alpha = 0.7)
+add_phylopic_base(Macaca, x = 60, y = 1, ysize = 1, xsize = 8, color = "#FF6DB6", alpha = 0.7)
 text(84, 14, "Article count", cex=1.1) #col = "#325F8C", 
 text(21, 14, "Species", cex=1.1) #col = "#325F8C", 
 title("Individual recognition (re-identification)")
