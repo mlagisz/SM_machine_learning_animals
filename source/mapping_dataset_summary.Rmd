@@ -258,7 +258,7 @@ rawdata_incl %>%
   labs(x = "", y = "Article count", title = "What disciplines journals represent?")
 ```
 
-A barplot of the counts  of publications in different journals, withjournals with >2 included papersshown sorted by descending frequency order, now with journals colored by discipline.  
+A barplot of the counts  of publications in different journals - journals with >2 included papers are shown sorted by descending frequency order (journals colored by discipline).  
 
 ```{r plot journal with discipline colors, fig.dim = c(8, 4)}
 # note: colors are added manually
@@ -874,7 +874,7 @@ tree <- write.tree(tree, file = here::here("data", "species_tree.tre")) #read sa
 ```
 
 ```{r plot indiv recognition species tree, fig.dim = c(8, 3), message = FALSE, warning = FALSE, echo = FALSE}
-tree <- read.tree(file = here::here("data", "species_tree.tre")) #read saved binary tree (a few polytomies 
+tree <- read.tree(file = here::here("data", "species_tree.tre")) #read saved binary tree
 
 #tree$tip.label
 tree$tip.label <- gsub("_"," ", tree$tip.label) #get rid of the underscores
@@ -1051,11 +1051,14 @@ bib_title <- left_join(rawdata_incl, bib, by = "TI2")
 # table(is.na(bib_title$correspondence_address1)) #68 here has no corresponding author affiliation
 # table(is.na(bib_title$funding_details)) # 91 has no funding details
 
-results <- biblioAnalysis(bib_title, sep = ";") #this calculates the main bibliometric measures, displaying main info about the bibliographic data frame 
+results <- biblioAnalysis(bib_title, sep = ";") #this calculates the main bibliometric measures, displaying main info about the bibliographic data frame
 #names(results)
+results$CountryCollaboration
+#sum(results$CountryCollaboration$SCP) #4only 3 multi-country papers out of 173 with data
 #plot(results, k = 50, pause = FALSE) #plots selected graphs
 results_summary <- summary(object = results, k = 10, pause = FALSE) #summary tables
 #str(results_summary) #lists of results from 9 analyses/tables
+results_summary
 #results_summary$MainInformationDF
 #results_summary$MostProdCountries
 #results_summary$MostRelSources
@@ -1064,6 +1067,17 @@ results_summary <- summary(object = results, k = 10, pause = FALSE) #summary tab
 
 #interpreting results object: https://search.r-project.org/CRAN/refmans/bibliometrix/html/biblioAnalysis.html
 ```
+
+
+#### Table S4
+Table of top 10 most pructive countries from bibliometric analyses.  
+SCP - single-country papers    
+MCP - multi-country papers   
+```{r data table country prodactivity articles}
+t4 <- results_summary$MostProdCountries %>% DT::datatable(rownames = FALSE, width = "100%", options = list(dom = 't', scrollY = '700px', pageLength = 20)) 
+t4
+```
+Note: 
 
 A barplot of country assigned to each publication based on the affiliation country of the first author. Co-authorship type is based on country of all authors of a given publication. SCP indicates all authors were affiliated with  the same country. MCP indicates international co-authorship.   
 
