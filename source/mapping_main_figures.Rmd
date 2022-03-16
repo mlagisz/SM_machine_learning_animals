@@ -1,0 +1,607 @@
+---
+title: "Main text figures for Systematic survey of literature using deep learning for animal image analysis at individual and ecological scales"
+authors: "M. Lagisz"
+date: "March 2022"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+## Overview
+
+This script creates files with the figures for the main text of the manuscript. it is not intended to be knitted.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+pacman::p_load(here, magrittr, tidyr, stringr, ggplot2, cowplot, tidyverse, here, readxl, bibliometrix, igraph, data.table, ggalluvial, rworldmap, rotl, ape, rphylopic, patchwork, ggplotify)
+```
+
+### Load and preprocess extracted data    
+
+Data cleaning before plotting.      
+
+```{r load and clean data}
+rawdata <- read_excel(here("data", "mapping_dataset_reconciled.xlsx"), sheet = 1)
+# dim(rawdata) #225 rows 47 columns
+# names(rawdata)
+# View(rawdata) # taking a quick look
+
+#remove excluded studies and remove all columns with "Comment", "checked" and then all unnecessary columns
+rawdata_incl <- rawdata %>% filter(Included == "1") %>% select(-starts_with("C")) %>% select(-c("Timestamp", "Respondent's initials:", "Pilot", "Included", "Exclusion reason"))
+
+#replace column names with shorter variable names for rawdata_incl analyses
+names(rawdata_incl) <- c("Title",
+                 "Author",
+                 "Year",
+                 "Journal",
+                 "DOI",
+                 "Species_number",
+                 "Study_species",
+                 "Studied_species_type",
+                 "Image_source_type",
+                 "Study_setting",
+                 "Location_country",
+                 "Location_details",
+                 "Location_coordinates",
+                 "Location_unclear",
+                 "Algorithm_type",
+                 "Outcome_type",
+                 "Analysis_code")
+
+## fix typos in the names and remove subspecies names
+rawdata_incl$Study_species <- gsub("Phascolarctus cinereus", "Phascolarctos cinereus", rawdata_incl$Study_species)
+rawdata_incl$Study_species <- gsub("Frlis catus domesticus", "Felis catus", rawdata_incl$Study_species)
+rawdata_incl$Study_species <- gsub("Panthera tigris altaica", "Panthera tigris", rawdata_incl$Study_species)
+rawdata_incl$Study_species <- gsub("Pan troglodytes verus", "Pan troglodytes", rawdata_incl$Study_species)
+rawdata_incl$Study_species <- gsub("Python molurus bivittatus", "Python molurus", rawdata_incl$Study_species)
+rawdata_incl$Study_species <- gsub("Sousa chinensis taiwanensis", "Sousa chinensis", rawdata_incl$Study_species)
+rawdata_incl$Study_species <- gsub("Ursus arctos maritimus", "Ursus arctos", rawdata_incl$Study_species)
+rawdata_incl$Study_species <- gsub("Pusa hispida saimensis", "Pusa hispida", rawdata_incl$Study_species)
+rawdata_incl$Study_species <- gsub("Phoca hispida saimensis", "Pusa hispida", rawdata_incl$Study_species)
+rawdata_incl$Study_species <- gsub("Chen caerulescens", "Anser caerulescens", rawdata_incl$Study_species)
+rawdata_incl$Outcome_type <- replace_na(rawdata_incl$Outcome_type, "species recognition/classification (class/object detection)") #fix NA
+#table(rawdata_incl$Location_country, useNA = "always") #0 NA, need to fix some names
+rawdata_incl$Location_country <- gsub("Botswanam Australia", "Botswana, Australia", rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("Falkland \\(Malvinas\\) Islands", "Falkland Islands", rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("Asutralia", "Australia", rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("Soith Africa", "South Africa", rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("The Netherlands" , "Netherlands" , rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("NZ", "New Zealand", rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("Korea", "South Korea", rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("Congo", "Republic of Congo", rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("UAE", "United Arab Emirates", rawdata_incl$Location_country)
+
+Location_country_sep <- separate_rows(rawdata_incl, Location_country, sep = ", ") #split rows with multiple values
+Location_country_sep$Location_country <- as.factor(Location_country_sep$Location_country) #as factor
+#table(Location_country_sep$Location_country, useNA = "always") 
+#unique(Location_country_sep$Location_country) #48 locations: 38 countries, others are either global/unclear or regions
+```
+```
+
+## Figure 1 - study species and animal types   
+
+```{r fig1A Species_number histogram}
+#A histogram with numbers of classes on a log x-scale due to strong right-skew in the data.   
+fig1A <- rawdata_incl %>% 
+  filter(Species_number != "NA") %>% 
+  select(Species_number) %>% 
+  ggplot(aes(x = as.integer(Species_number))) + 
+  geom_histogram(fill="grey") +
+  theme_classic() +
+  scale_x_log10() +
+  labs(x = "Number", y = "Article count", title = "Number of species/animal classes?") +
+  theme(axis.title.y = element_text(angle = 90, hjust = 0.5, vjust = 0.5))
+
+fig1A
+```
+
+```{r fig1B Animal types barplot}
+#A barplot of article counts by studied animal biological group.  
+
+Studied_species_type_sep <- separate_rows(rawdata_incl, Studied_species_type, sep = ", ") #split rows with multiple values
+#table(Studied_species_type_sep$Studied_species_type, useNA = "always") #1 NA
+Studied_species_type_sep$Studied_species_type <- replace_na(Studied_species_type_sep$Studied_species_type, "unclear") #fix NA
+Studied_species_type_sep$Studied_species_type <- as.factor(Studied_species_type_sep$Studied_species_type)
+
+fig1B <- Studied_species_type_sep %>% 
+  filter(!is.na(Studied_species_type)) %>% 
+  count(Studied_species_type) %>%
+  arrange(n) %>%
+  mutate(class = factor(Studied_species_type, levels = Studied_species_type)) %>%
+  ggplot(aes(x = class, y = n, fill = class)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_classic() +
+  scale_fill_manual(values=rev(c("#CF4E9C", "#B66DFF", "#006DDB", "#490092", "#009292", "#DB6D00", "#924900"))) +
+  geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 1) +
+  ylim(c(0,150)) +
+  coord_flip() +
+  theme(legend.position = "none") +
+  labs(x = "", y = "Article count", title = "What types of animals were studied?")
+
+fig1B
+```
+
+```{r fig1C study species one recolor}
+# A barplot with color-coded biological groups for one-species studies   
+
+#Studied_species_type custom colors: "amphibians" = "#009292", "birds" = "#B66DFF","fishes" = "#006DDB", "mammals" = "#CF4E9C", "other" = "#924900", "reptiles" = "#490092", "unclear" = "#DB6D00")# #assign colors to biological groups, https://r-charts.com/color-palettes/ using paletteer_d("colorBlindness::paletteMartin")
+
+ rawdata_incl %>% filter(Species_number == "1") %>% 
+   filter(Study_species != "unclear") %>% select(Study_species, Studied_species_type) %>%
+   unique() %>% mutate(species_cols = recode(Studied_species_type, "amphibians" = "#009292", "birds" = "#B66DFF","fishes" = "#006DDB", "mammals" = "#CF4E9C", "other" = "#924900", "reptiles" = "#490092", "unclear" = "#DB6D00")) -> species_colors_table
+
+rawdata_incl %>% filter(Species_number == "1") %>% 
+  filter(Study_species != "unclear") %>% 
+  count(Study_species) %>%
+  arrange(n) %>% left_join(species_colors_table, by = "Study_species") %>% pull(species_cols) -> species_cols
+
+fig1C <- rawdata_incl %>% filter(Species_number == "1") %>% 
+  filter(Study_species != "unclear") %>% 
+  count(Study_species) %>%
+  arrange(n) %>%
+  mutate(class = factor(Study_species, levels = Study_species), taxa = as.factor(species_cols)) %>%
+  ggplot(aes(x = class, y = n, fill = taxa)) +
+  geom_bar(aes(fill = taxa), stat = "identity", position = "dodge") +
+  theme_classic() +
+  scale_fill_manual(labels = c("fishes", "reptiles", "birds", "mammals"), values = c("#006DDB", "#490092", "#B66DFF", "#CF4E9C")) +
+ # geom_text(aes(label=scales::comma(n)), hjust = 0, nudge_y = 1) +
+  theme(legend.position = "bottom", axis.text.y = element_text(face = "italic")) +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 20, 1)) +
+  labs(x = "", y = "Article count", title = "Most popular species in single-species studies?", fill = "biological group:") +
+  theme(legend.position = "none")
+
+fig1C
+```
+
+```{r fig1C_inset species individual recognition}
+# Inset - a tee and a barplot with color-coded biological groups for one-species individual recognition studies   
+# NOTE: this is a base plot - need to convert to ggplot
+
+tree <- read.tree(file = here::here("data", "species_tree.tre")) #read saved binary tree
+tree$tip.label <- gsub("_"," ", tree$tip.label) #get rid of the underscores
+
+
+#table(rawdata_incl$Outcome_type, useNA = "always") #1 NA, need to split at comma
+Outcome_type_sep <- separate_rows(rawdata_incl, Outcome_type, sep = ", ") #split rows with multiple values
+#table(Outcome_type_sep$Outcome_type, useNA = "always") 
+Outcome_type_sep$Outcome_type <- recode(Outcome_type_sep$Outcome_type, "unclear/other (add comment)" = "other / unclear")
+Outcome_type_sep$Outcome_type <- as.factor(Outcome_type_sep$Outcome_type)
+Outcome_type_sep_indiv <- Outcome_type_sep %>% 
+  filter(Outcome_type == "individual recognition (re-identification)") 
+myspecies_data <- Outcome_type_sep_indiv %>% filter(Species_number == "1") %>% 
+  filter(Outcome_type == "individual recognition (re-identification)") %>% 
+  filter(Study_species != "unclear") %>% group_by(Study_species) %>%
+	summarise(count_studies = n(), biological_group = first(Studied_species_type))
+#colnames(myspecies_data)
+
+#length(intersect(tree$tip.label, myspecies_data$Study_species)) #13 - all species names match the tree
+#setdiff(tree$tip.label, myspecies_data$Study_species) #0 - all species names match
+#setdiff(myspecies_data$Study_species, tree$tip.label) #
+#prep for plotting bars of article counts
+myspecies_counts <- myspecies_data$count_studies
+names(myspecies_counts) <- myspecies_data$Study_species #add row names
+
+#set colors for the biological groups information
+color_bgroup <- recode(myspecies_data$biological_group, "fishes" = "#006DDB", "mammals" = "#CF4E9C")
+#assign colors to biological groups, https://r-charts.com/color-palettes/
+
+names(color_bgroup) <- myspecies_data$Study_species #make it a named vector
+color_bgroup_tip <- color_bgroup[match(tree$tip.label, names(color_bgroup))]  # reorder colors to match the order of tips on the tree
+
+#collect images using package rphylopic:
+Pan <- image_data("7133ab33-cc79-4d7c-9656-48717359abb4", size = 128)[[1]]
+Eubalaena <- image_data("fb533874-aa63-4f76-baf0-e9ceacd7333c", size = 128)[[1]]
+Cephalorhynchus <- image_data("0d20875b-a4cd-4b87-98ec-080aff1c2c38", size = 128)[[1]]
+Gorilla <- image_data("d9af529d-e426-4c7a-922a-562d57a7872e", size = 128)[[1]]
+Megaptera <- image_data("ce70490a-79a5-47fc-afb9-834e45803ab4", size = 128)[[1]]
+Pusa <- image_data("157b50ce-b330-4315-b2cd-53a0fa681d10", size = 128)[[1]]
+Panthera <- image_data("e148eabb-f138-43c6-b1e4-5cda2180485a", size = 128)[[1]]
+Ursus <- image_data("a12876cb-0930-4310-8ea8-2378df8164e3", size = 128)[[1]]
+Sousa <- image_data("7bed394a-90e1-4da0-9d07-5b080a2061f4", size = 128)[[1]]
+Macaca <- image_data("eedde61f-3402-4f7c-9350-49b74f5e1dba", size = 128)[[1]]
+Grampus <- image_data("78d1f7fa-aece-4f92-bacf-843418d95723", size = 128)[[1]]
+Ailuropoda <- image_data("4b1f7a58-8713-4d6e-a130-4c8a1ac2f749", size = 128)[[1]]
+Salmo <- image_data("7f2cbb42-12b1-4481-8ac0-705eb7363c74", size = 128)[[1]]
+
+p_inset <- as.ggplot(function() {
+  par(oma=c(0,0,0,0)) # all sides have 3 lines of space
+  par(mar=c(4,0,2,0) + 0.1)
+  plot(tree, x.lim = 100, y.lim = 15, cex = 0.8, tip.color = color_bgroup_tip, label.offset = 1)
+  phydataplot(myspecies_counts, tree, offset = 60, scaling = 5, border = "white", col = color_bgroup_tip, cex.axis = 0.8)
+  title("Individual recognition (re-identification)")
+  add_phylopic_base(Salmo, x = 60, y = 13, ysize = 0.8, xsize = 8, color = "#006DDB", alpha = 0.6)
+  add_phylopic_base(Panthera, x = 60, y = 12, ysize = 1, xsize = 12, color = "#CF4E9C", alpha = 0.7)
+  add_phylopic_base(Pusa,x = 60, y = 11, ysize = 1, xsize = 10, color = "#CF4E9C", alpha = 0.7)
+  add_phylopic_base(Ailuropoda, x = 60, y = 10, ysize = 1, xsize = 6, color = "#CF4E9C", alpha = 0.7)
+  add_phylopic_base(Ursus, x = 60, y = 9, ysize = 1, xsize = 11, color = "#CF4E9C", alpha = 0.7)
+  add_phylopic_base(Eubalaena, x = 60, y = 8, ysize = 1, xsize = 12, color = "#CF4E9C", alpha = 0.7)
+  add_phylopic_base(Megaptera, x = 60, y = 7, ysize = 1, xsize = 10, color = "#CF4E9C", alpha = 0.7)
+  add_phylopic_base(Sousa, x = 60, y = 6, ysize = 1, xsize = 10, color = "#CF4E9C", alpha = 0.7)
+  add_phylopic_base(Cephalorhynchus, x = 60, y = 5, ysize = 1, xsize = 12, color = "#CF4E9C", alpha = 0.7)
+  add_phylopic_base(Grampus, x = 60, y = 4, ysize = 1, xsize = 12, color = "#CF4E9C", alpha = 0.7)
+  add_phylopic_base(Gorilla, x = 60, y = 3, ysize = 1, xsize = 6, color = "#CF4E9C", alpha = 0.7)
+  add_phylopic_base(Pan, x = 60, y = 2, ysize = 0.8, xsize = 6, color = "#CF4E9C", alpha = 0.7)
+  add_phylopic_base(Macaca, x = 60, y = 1, ysize = 1, xsize = 8, color = "#CF4E9C", alpha = 0.7)
+  text(84, 14, "Article count", cex=1) #col = "#325F8C", 
+  text(21, 14, "Species", cex=1) #col = "#325F8C", 
+  title("Individual recognition (re-identification)")
+  box(col = "grey", lwd = 2, which = "figure")# Add box to plot
+    }
+)
+
+p_inset
+#fig1C + inset_element(p_inset, left = 0.3, bottom = 0.1, right = 0.9, top = 0.95)
+```
+
+```{r fig1 assemble}
+#assemble the panels
+
+fig1A / fig1B / fig1C + inset_element(p_inset, left = 0.35, bottom = 0.01, right = 0.99, top = 0.75) +
+  plot_layout(ncol = 1, nrow = 3, heights = c(1, 1, 3)) +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag.position = c(0.01,0.99), plot.tag = element_text(size = 14, face = "bold"))
+
+#save the figure 
+ggsave(here("plots", "Figure1_v0.pdf"), width = 16, height = 20, units = "cm", dpi = 300, scale=1.8)
+```
+
+
+## Figure 2 - types of image sources used    
+
+```{r fig2A plot study image source types}
+#table(rawdata_incl$Image_source_type, useNA = "always") #0 NA, need to split at comma
+Image_source_type_sep <- separate_rows(rawdata_incl, Image_source_type, sep = ", ") #split rows with multiple values
+Image_source_type_sep$Image_source_type <- as.factor(Image_source_type_sep$Image_source_type)
+#table(Image_source_type_sep$Image_source_type, useNA = "always")
+
+fig2A <- Image_source_type_sep %>% 
+  filter(!is.na(Image_source_type)) %>% 
+  count(Image_source_type) %>%
+  arrange(n) %>%
+  mutate(class = factor(Image_source_type, levels = Image_source_type)) %>%
+  ggplot(aes(x = class, y = n, fill = Image_source_type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_classic() +
+  scale_fill_manual(values=rev(c("#748AA6", "#95CC5E", "#F79D1E", "#D0DFE6"))) +
+  theme(legend.position = "none") + 
+  geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 1) +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 150, 10)) +
+  scale_x_discrete(labels=c("other / unclear", "aerial / drone", "hand / mobile camera", "fixed camera")) +
+  labs(x = "", y = "Article count", title = "What types of images were studied?")
+
+fig2A
+```
+
+```{r fig2B plot years and image types}
+fig2B <- Image_source_type_sep %>% 
+  filter(!is.na(Image_source_type)) %>% 
+  filter(Image_source_type != "other / unclear") %>%   
+  count(Image_source_type, Year) %>%
+  ggplot(aes(x = Year, y = n, fill = Image_source_type)) + 
+  geom_area() +
+  theme_classic() +
+  scale_fill_manual(values=rev(c("#95CC5E", "#F79D1E", "#D0DFE6"))) +
+  theme(legend.position = "none") + 
+  labs(x = "", y = "Article count", title = "How image source changed?")
+
+fig2B
+```
+
+```{r fig2 assemble}
+#assemble the panels
+
+fig2A / fig2B +
+  plot_layout(ncol = 1, nrow = 2, heights = c(1, 1)) +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag.position = c(0.01,0.99), plot.tag = element_text(size = 14, face = "bold"))
+
+#save the figure 
+ggsave(here("plots", "Figure2_v0.pdf"), width = 16, height = 10, units = "cm", dpi = 300, scale=1.8)
+```
+
+
+## Figure 3 - Algorithm vs studied outcome heat map    
+
+```{r fig3A plot algorythms and outcomes}
+Outcome_type_sep <- separate_rows(rawdata_incl, Outcome_type, sep = ", ") #split rows with multiple values
+Outcome_type_sep$Outcome_type <- recode(Outcome_type_sep$Outcome_type, "unclear/other (add comment)" = "other / unclear")
+Outcome_type_sep$Outcome_type <- as.factor(Outcome_type_sep$Outcome_type)
+Outcome_type_sep$Outcome_type <- ordered(Outcome_type_sep$Outcome_type, levels = rev(c("species recognition/classification (class/object detection)", "individual recognition (re-identification)", "counting individuals (at given time)", "tracking (following through space)", "behaviour detection (at given time)", "behaviour classification (changes over time)", "other / unclear" ))) #reorder levels
+Outcome_algorithm_type_sep <- separate_rows(Outcome_type_sep, Algorithm_type, sep = ", ") #split rows with multiple values
+Outcome_algorithm_type_sep$Algorithm_type <- as.factor(Outcome_algorithm_type_sep$Algorithm_type)
+Outcome_algorithm_type_sep$Algorithm_type <- ordered(Outcome_algorithm_type_sep$Algorithm_type, levels = rev(c("Neural Network", "Support Vector Machines", "Random forest", "K-Nearest Neighbour", "Decision trees", "Gradient boosting model", "unclear/other" ))) #reorder levels
+Outcome_algorithm_type_sep$Algorithm_type <- recode(Outcome_algorithm_type_sep$Algorithm_type, "unclear/other" = "other / unclear")
+
+fig3A <- Outcome_algorithm_type_sep %>% 
+  filter(!is.na(Outcome_type)) %>% 
+  filter(!is.na(Algorithm_type)) %>% 
+  count(Outcome_type, Algorithm_type) %>%
+  ggplot(aes(x = Algorithm_type, y = Outcome_type, fill = n)) +
+  theme_classic() +
+  geom_tile(color = "black") +
+  scale_fill_gradient(low = "white", high = "darkgrey") +
+  geom_text(aes(label = n), color = "black", size = 4) +
+  coord_fixed() +
+  theme(legend.position = "none") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text.y = element_text(angle = 0)) +
+  scale_y_discrete(labels=rev(c("species recognition/classification \n(object detection)", "individual recognition\n(re-identification)", "counting individuals\n(at given time)", "tracking (following\nthrough space)", "behaviour detection\n(at given time)", "behaviour classification\n(changes over time)", "other / unclear"))) +
+  labs(x = "Algorithm type", y = "Outcome type", title = "What algorithm for what outcome?")
+
+fig3A
+```
+
+```{r fig3B plot years and algorithm types}
+#table(rawdata_incl$Algorithm_type, useNA = "always") #0 NA, need to split at comma
+Algorithm_type_sep <- separate_rows(rawdata_incl, Algorithm_type, sep = ", ") #split rows with multiple values
+Algorithm_type_sep$Algorithm_type <- as.factor(Algorithm_type_sep$Algorithm_type)
+Algorithm_type_sep$Algorithm_type <- ordered(Algorithm_type_sep$Algorithm_type, levels = rev(c("Neural Network", "Support Vector Machines", "Random forest", "K-Nearest Neighbour", "Decision trees", "Gradient boosting model", "unclear/other" ))) #reorder levels
+Algorithm_type_sep$Algorithm_type <- recode(Algorithm_type_sep$Algorithm_type, "unclear/other" = "other / unclear")
+
+fig3B <- Algorithm_type_sep %>% 
+  filter(!is.na(Algorithm_type)) %>% 
+  filter(Algorithm_type != "other / unclear") %>%   
+  count(Algorithm_type, Year) %>%
+  ggplot(aes(x = Year, y = n, fill = Algorithm_type)) + 
+  geom_area() +
+  theme_classic() +
+  theme(legend.position = "left", legend.direction = "vertical", plot.margin = margin(t = 40, r = 0, b = 20, l = 10)) + 
+  labs(x = "", y = "Article count", title = "How algorithm type changed?")
+
+fig3B
+```
+
+```{r fig3 assemble}
+#assemble the panels
+
+fig3A / fig3B +
+  plot_layout(ncol = 1, nrow = 2, heights = c(3, 2)) +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag.position = c(0.01,0.99), plot.tag = element_text(size = 14, face = "bold"))
+
+#save the figure 
+ggsave(here("plots", "Figure3_v0.pdf"), width = 16, height = 12, units = "cm", dpi = 300, scale=1.8)
+```
+
+
+## Figure 4 - author country affiliation and geographical origins of animal images    
+
+```{r fig4A plot country locations alluvial}
+bib <- convert2df(here("data", "scopus_AI_1and2.bib"), dbsource = "wos", format = "bibtex") #does not load with dbsource = "wos"
+## Initial data cleaning and merging with manually coded data frame. Standard bibliometric data summary.      
+bib$TI2 <- gsub("[^[:alnum:] ]", "", bib$TI) %>% str_replace_all(.,"[ ]+", " ") #remove all non-alphanumeric, punctuation and extra white spaces in bib object
+rawdata_incl$TI2 <- str_to_upper(gsub("[^[:alnum:] ]", "", rawdata_incl$Title)) %>% str_replace_all(.,"[ ]+", " ") #remove all non-alphanumeric, punctuation and extra white spaces in rawdata_incl object
+
+## Clean up 6 non-matching titles before merging - replace title TI2 in bib (not-matching) with TI2  from rawdata_incl
+bib[bib$TI2 %like% "MODELLING WILDLIFE SPECIES ABUNDANCE USING", "TI2"] <- rawdata_incl[rawdata_incl$TI2 %like% "MODELLING WILDLIFE SPECIES ABUNDANCE USING", "TI2"]
+bib[bib$TI2 %like% "COUNTING BREEDING GULLS", "TI2"] <- rawdata_incl[rawdata_incl$TI2 %like% "COUNTING BREEDING GULLS", "TI2"]
+bib[bib$TI2 %like% "COMPARING CLASSAWARE AND PAIRWISE LOSS FUNCTIONS", "TI2"] <- rawdata_incl[rawdata_incl$TI2 %like% "COMPARING CLASSAWARE AND PAIRWISE LOSS FUNCTIONS", "TI2"]
+bib[bib$TI2 %like% "BELUGA WHALE DETECTION IN THE CUMBERLAND", "TI2"] <- rawdata_incl[rawdata_incl$TI2 %like% "BELUGA WHALE DETECTION IN THE CUMBERLAND", "TI2"]
+bib[bib$TI2 %like% "REVEALING THE UNKNOWN REALTIME RECOGNITION OF", "TI2"] <- rawdata_incl[rawdata_incl$TI2 %like% "REVEALING THE UNKNOWN REALTIME RECOGNITION OF", "TI2"]
+
+## Join the data frames
+bib_title <- left_join(rawdata_incl, bib, by = "TI2")
+results <- biblioAnalysis(bib_title, sep = ";") #this processess the data and calculates the main bibliometric measures
+
+## Add to main data frame and clean
+bib_title$Author_country <- str_to_title(results$CO)
+bib_title$Author_country <- recode(bib_title$Author_country, "Usa" = "USA") #fix USA
+bib_title$Author_country <- recode(bib_title$Author_country, "United Kingdom" = "UK") #fix UK
+bib_title_locations <- separate_rows(bib_title, Location_country, sep = ", ") #split rows with multiple values
+countries_overlap <- data.table(table(bib_title_locations$Location_country, bib_title_locations$Author_country)) #make a table of counts of country overlaps
+names(countries_overlap) <- c('location', 'author', 'freq')
+
+#countries_overlap2 <- countries_overlap %>% filter(freq > 1) #alluvial plot using only countries with >1 papers
+
+fig4A <- countries_overlap %>% filter(freq > 1) %>% 
+  ggplot(aes(axis1 = author, axis2 = location, y = freq, legend.position = "none")) +
+  geom_alluvium(aes(fill = author)) +
+  geom_stratum(color = "grey") +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  scale_x_discrete(limits = c("author", "images"), expand = c(0.15, 0.05), position = "top") +
+  scale_fill_viridis_d() +
+  labs(title = "Where first author and images come from?") +
+  theme_void() +
+  theme(legend.position = "none", axis.text.x = element_text(size=10, face = "italic"), plot.title = element_text(hjust = 0.5)) 
+
+fig4A
+#Note: by first author country, only countries with >1 paper
+```
+
+```{r fig4B plot country locations worldmap}
+worldmap <- getMap() #use data from package rworldmap
+worldmap_names <- select(as.data.frame(worldmap), NAME) #extract names
+worldmap_names <- levels(worldmap_names$NAME) #make names into a character vector
+
+## Recode some country names (others will be omitted if too generic or unclear)
+countries_overlap$author <- recode(countries_overlap$author , "USA" = "United States", "Western Indian Ocean" = "Mauritius", "Korea" = "S. Korea", "UK" = "United Kingdom", "Czech Republic" = "Czech Rep.", "Republic of Congo" = "Congo (Brazzaville)", "Norwegian Sea" = "Faroe Is.", "Falkland Islands" = "Falkland Is.")
+countries_overlap$location <- recode(countries_overlap$location , "USA" = "United States", "Western Indian Ocean" = "Mauritius", "Korea" = "S. Korea", "UK" = "United Kingdom", "Czech Republic" = "Czech Rep.", "Republic of Congo" = "Congo (Brazzaville)", "Norwegian Sea" = "Faroe Is.", "Falkland Islands" = "Falkland Is.")
+
+#select only countries with >0 papers, select only where location not global and not unclear
+countries_overlap2 <- countries_overlap %>% filter(freq > 0) %>% filter(location != "unclear") %>% filter(location != "global") 
+
+## Add country colors
+countries_overlap2$color_location <- as.factor(countries_overlap2$location) #colours by location
+
+## Assign evenly spaced colors from viridis scale by location country
+levels(countries_overlap2$color_location) <- scales::viridis_pal(alpha = 0.5, option = "D")(length(unique(countries_overlap2$color_location)))
+#plot(c(1:length(unique(countries_overlap2$color_location))), pch=19, cex=2, col=scales::viridis_pal(alpha = 0.5, option = "D")(length(unique(countries_overlap2$color_location)))) #check colours
+
+## Assign matching colours to author countries
+countries_overlap2$color_author <- countries_overlap2$color[match(countries_overlap2$author, countries_overlap2$location)]
+
+#assign brown to countries with NA
+countries_overlap2$color_author %>% as.character() %>% replace_na("#A9A9A9FF") -> countries_overlap2$color_author
+
+## Add latitude and longitude to each country 
+countries_overlap2 <- countries_overlap2 %>%
+  left_join(select(as.data.frame(worldmap), NAME, LON, LAT),
+             by = c("location" = "NAME")) %>%
+  left_join(select(as.data.frame(worldmap), NAME, LON, LAT),
+             by = c("author" = "NAME"))
+
+## Split int subsets for plotting lines and circles
+countries_overlap2_diff <- filter(countries_overlap2, location != author) #end points must not be identical for connecting lines
+countries_overlap2_same <- filter(countries_overlap2, location == author) # points with the same countries - use for points
+
+fig4B <- ggplot() + 
+  geom_polygon(data = worldmap, aes(long, lat, group=group), fill="gray") +
+  geom_curve(data = countries_overlap2_diff, aes(x = LON.x, y = LAT.x, xend = LON.y, yend = LAT.y),
+             curvature = -0.2, arrow = arrow(type = "open", length = unit(0.02, "npc")), colour = countries_overlap2_diff$color_location) +
+  labs(title = 'Data country to first author country?', x = "", y = "") +
+  geom_point(
+    data = countries_overlap2_same,
+    aes(LON.x, LAT.x, color = color_author), size = countries_overlap2_same$freq,
+    alpha = 0.5, position = position_jitter(width = 1, height = 1)
+  ) +
+  theme_void() +
+  theme(legend.position = "none", plot.caption = element_text(hjust = 0.5), plot.title = element_text(hjust = 0.5)) +
+  labs(title = "How first author and location of images overlap?", caption = "circles = overlapping locations (scaled by count), arrows = non-overlapping locations (image -> author)")
+
+fig4B
+#Note: data by first author country, global and unclear locations ignored
+```
+
+```{r fig4 assemble}
+#assemble the panels
+
+fig4A / fig4B +
+  plot_layout(ncol = 1, nrow = 2, heights = c(2, 1)) +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag.position = c(0, 0.98), plot.tag = element_text(size = 14, face = "bold"))
+
+#save the figure 
+ggsave(here("plots", "Figure4_v0.pdf"), width = 16, height = 20, units = "cm", dpi = 300, scale=1.8)
+```
+
+## Figure 5 - publication information    
+
+```{r fig5A plot journal discipline by year}
+# classify journals into comp.sci vs. ecology journals
+rawdata_incl$Journal_discipline <- 
+  recode(rawdata_incl$Journal, "Behavioral Ecology and Sociobiology" = "ecology", "Ethology" = "ecology", "Global Ecology and Conservation" = "ecology", "Integrative Zoology" = "ecology", "Mammal Study" = "ecology", "Wildlife Society Bulletin" = "ecology", "Journal of Coastal Research" = "ecology", "Condor" = "ecology", "Methods in Ecology and Evolution" = "ecology", "Environmental Monitoring and Assessment" = "ecology", "Remote Sensing in Ecology and Conservation" = "ecology", "Ornis Fennica" = "ecology", "Ecology and Evolution" = "ecology", "European Journal of Wildlife Research" = "ecology", "Frontiers in Marine Science" = "ecology", "Conservation Biology" = "ecology", "Animals" = "ecology", "Ecological Informatics" = "ecology", "Scientific Reports" = "multidisciplinary", "Science Advances" = "multidisciplinary", "Proceedings of the National Academy of Sciences of the United States of America" = "multidisciplinary", .default = "computer science / technology")
+rawdata_incl$Journal_discipline <- as.factor(rawdata_incl$Journal_discipline)
+rawdata_incl$Journal_discipline <- factor(rawdata_incl$Journal_discipline, levels=c("multidisciplinary", "ecology", "computer science / technology")) #custom order
+
+fig5A <- rawdata_incl %>% 
+  filter(!is.na(Journal_discipline)) %>% 
+  filter(Journal_discipline != "unclear/other") %>%   
+  count(Journal_discipline, Year) %>%
+  ggplot(aes(x = Year, y = n, fill = Journal_discipline)) + 
+  geom_area() +
+  theme_classic() +
+  theme(legend.position = "left", legend.direction = "vertical") + 
+  scale_fill_manual(values = c("#24325F", "#526E2D", "#B7E4F9"))+ 
+  labs(x = "", y = "Article count", title = "Journal discipline by year")
+
+fig5A
+
+```
+
+```{r fig5B plot journal top9 barplot}
+fig5B <- count(rawdata_incl, Journal) %>%
+  arrange(n) %>% top_n(9) %>%
+  mutate(Journals = factor(Journal, levels = Journal)) %>%
+  ggplot(aes(x = Journals, y = n, fill = Journals)) +
+  geom_bar(stat = "identity", position = "dodge") +
+ # geom_text(aes(label = scales::comma(n)), hjust = 0, nudge_y = 1) +
+  theme_classic() +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 20, 1)) +
+  scale_fill_manual(values = c("#B7E4F9", "#B7E4F9", "#526E2D", "#B7E4F9", "#B7E4F9", "#526E2D","#B7E4F9", "#526E2D", "#526E2D")) + 
+  scale_x_discrete(labels=rev(c("Ecological Informatics", "Methods in Ecology and Evolution", "Lecture Notes in Computer Science", "Ecology and Evolution", "IEEE/CVF International Conference\non Computer Vision Workshop (ICCVW)", "Communications in Computer\nand Information Science", "Animals", "Remote Sensing", "Advances in Intelligent\nSystems and Computing"))) +
+  theme(legend.position = "none") + 
+  labs(x = "", y = "Article count", title = "Where it was published?")
+
+fig5B
+#Note: journals with >2 included papers are shown sorted by descending frequency order (journals manually colored by discipline)
+```
+
+```{r fig5 assemble}
+#assemble the panels
+
+fig5A / fig5B +
+  plot_layout(ncol = 1, nrow = 2, heights = c(1, 1)) +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag.position = c(0, 0.98), plot.tag = element_text(size = 14, face = "bold"))
+
+#save the figure 
+ggsave(here("plots", "Figure5_v0.pdf"), width = 16, height = 10, units = "cm", dpi = 300, scale=1.8)
+```
+
+
+## Figure 6 - open and transparent practices    
+
+```{r fig6A plot reporting quality}
+## Prep columns
+Study_setting_sep <- separate_rows(rawdata_incl, Study_setting, sep = ", ") #split rows with multiple values
+Study_setting_sep$Study_setting <- as.factor(Study_setting_sep$Study_setting)
+Location_country_sep <- separate_rows(rawdata_incl, Location_country, sep = ", ") #split rows with multiple values
+Location_country_sep$Location_country <- as.factor(Location_country_sep$Location_country) #as factor
+rawdata_incl %>% filter(Study_setting == "wild" | Study_setting == "wild, semi-wild") %>% filter(is.na(Location_coordinates) == FALSE) %>% separate(col = Location_coordinates, into = c("Latitude", "Longitude") , sep = ", ") -> coordinates_sep
+#fix typo in a coordinate
+coordinates_sep$Longitude <- gsub("− 28.169438", "-28.169438", coordinates_sep$Longitude)
+coordinates_sep$Longitude <- as.numeric(coordinates_sep$Longitude)
+coordinates_sep$Latitude <- as.numeric(coordinates_sep$Latitude)
+coordinates_sep$Approximate_location <- recode(coordinates_sep$Location_unclear, "0" = "no", "1" = "yes")
+
+## Make a table with count of clear ( = sufficient) and unclear/missing (insufficient) / NA:
+table_unclear <- rbind(table(rawdata_incl$Species_number == "NA"),
+                       table(rawdata_incl$Study_species == "unclear"),
+                       table(Studied_species_type_sep$Studied_species_type == "unclear"),
+                       table(Image_source_type_sep$Image_source_type == "other / unclear"),
+                       table(Study_setting_sep$Study_setting == "unclear/other"),
+                       table(Location_country_sep$Location_country == "unclear"),
+                       table(coordinates_sep$Approximate_location == "yes"),
+                       table(Algorithm_type_sep$Algorithm_type == "other / unclear"),
+                       table(Outcome_type_sep$Outcome_type == "other / unclear") )
+colnames(table_unclear) <- c("sufficient", "insufficient") #rename table columns 
+table_unclear <- data.frame(table_unclear) #change to data frame  
+table_unclear$variable <-  c("Species/class number", "Single species/class name", "Study species type", "Image source type", "Study setting", "Location country", "In the wild location", "Algorithm type", "Outcome type") #prepare labels
+table_unclear %>% mutate(pct_sufficient = round(sufficient / (insufficient + sufficient) * 100, 1))
+table_unclear_long <- gather(table_unclear, reporting, value, insufficient:sufficient) #reshape dataframe into vertical
+
+fig6A <- ggplot(table_unclear_long, aes(fill = reporting, y = value, x = variable)) + 
+  geom_bar(position = "fill", stat = "identity") +
+  theme_classic() +
+  coord_flip() +
+  theme(legend.position = "right") +
+  labs(x = "", y = "Proportion", title = "Reporting quality of study aspects?") #species names not extracted from multi-species studies
+
+fig6A
+#Note: assessed as relevant and including when inferred from other sources
+```
+
+```{r fig6B plot code sharing}
+fig6B <- rawdata_incl %>% 
+  filter(!is.na(Analysis_code)) %>% 
+  count(Analysis_code) %>%
+  arrange(n) %>%
+  mutate(class = factor(Analysis_code, levels = Analysis_code)) %>%
+  ggplot(aes(x = class, y = n, fill = rev(class))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_classic() +
+  coord_flip() +
+  geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 1) +
+  scale_y_continuous(breaks = seq(0, 200, 50)) +
+  theme(legend.position = "none") +
+  labs(x = "", y = "Article count", title = "Was analysis code shared?")
+
+fig6B
+#Note: not checking if code complete or working
+```
+
+```{r fig6 assemble}
+#assemble the panels
+
+fig6A / fig6B +
+  plot_layout(ncol = 1, nrow = 2, heights = c(2, 1)) +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag.position = c(0, 0.98), plot.tag = element_text(size = 14, face = "bold"))
+
+#save the figure 
+ggsave(here("plots", "Figure6_v0.pdf"), width = 16, height = 8, units = "cm", dpi = 300, scale=1.8)
+```
+
