@@ -42,7 +42,7 @@ ggthemr('fresh') #select one ggplot theme to be used
 The main objective of this systematic literature survey was to identify gaps and trends in a representative sample of published studies using deep-learning algorithms to analyse image data for animals species/individual/behaviour recognition and/or classification. To gain insights on recent developments aresented in academic literature, we focused on the journal articles and full-text conference proceedings published in the last 5 years (2017-2021).   
 
 ## Literature search  
-We run a search in Scopus on 2021/10/10 using a pre-piloted search string (for details on the development including validation set refer a dedicated Notion notebook - **ADD DETAILS LETER?**):   
+We run a search in Scopus on 2021/10/10 using a pre-piloted search string (for details on the development including validation set refer a dedicated Notion notebook):   
 
 ( TITLE-ABS-KEY ( ( \*automatic\* OR "machine learning" OR "computer learning" OR "deep learning" OR "neural network\*" OR "random forest\*" OR "convolutional neural" OR "convolutional network\*" OR "learning algorithm\*" OR "Support Vector\*" ) AND ( image* OR camera* OR video* OR vision ) AND ( \*wild\* OR population* OR "species identif\*" OR "species label\*" OR "species richness" OR ( bahavio* AND within/ 10 classif* ) OR ( bahavio* AND within/ 10 recogn* ) ) AND NOT ( "natural language" OR "sign language" OR accelomet* OR clinical* OR industr* OR agricult* OR farm* OR leaf OR husbandry OR food* OR tissue* OR cell* OR cultur* OR wildfire* OR "tree growth" OR forestry OR hydrolog* OR engineer* OR "oxygen species" OR molec* OR bacteria* OR microb* OR chemi* OR spectrom* OR brain* OR drug* OR patient* OR cancer* OR smoking OR disease OR diabet* OR landsat* OR sentinel OR satellite* OR "land cover" OR "land use" OR "vegetation map\*" OR galax\* OR "Google Earth" OR scan* OR "X-ray" OR "health care" OR participant* OR emotion* OR employee* OR speech OR proceedings ) ) ) AND PUBYEAR > 2016    
 
@@ -54,13 +54,16 @@ Following PICO framework, we included articles if all criteria below were fulfil
 
 - **Population:** wild or semi-wild vertebrate species (exclude domestic or farmed animals, invertebrates, museum specimens).   
 
-- **Intervention** / **Innovation:** use of computer vision machine learning algorithms (include neural-network type methods, such as deep learning, CNN), support vector, random forest) for automated or semi-automated processing of image data (e.g. from camera traps, video tracking, thermal imaging) at a scale where individual animals are visible (include aerial and drone images (exclude images gathered from satellites, biologing, X-ray, MRI images or equivalent).   
+- **Intervention** / **Innovation:** use of computer vision machine learning algorithms (include neural-network type methods, such as deep learning, CNN), support vector, random forest) for automated or semi-automated processing of image data (e.g. from camera traps, video tracking, thermal imaging) at a scale where individual animals are visible (include aerial and drone images (exclude images gathered from satellites, biologing, X-ray, MRI images or equivalent *).   
 
 - **Comparator** / **Context**: images taken in the wild or semi-wild (includes zoo enclosures, excludes lab-based or agricultural/aquaculture/pet studies).   
 
 - **Outcomes**: analyses focus on animal / species individual recognition/classification or animal behaviour recognition/classification.   
 
 - Additional criteria: studies published in last 5 years (2017-2021), peer-reviewed (including full-text conference proceedings).   
+
+*Note: Aerial and drone images are used to capture images of medium to large vertebrates, such as birds and ungulates; however, satellite images are only useful for huge mammals such as elephants and whales and require different processing pipelines. Biologging image-based studies attach small cameras to animals to record their movements and activities only and usually require capturing the animals before releasing them back in the wild. X-ray and MRI images are typically used in a laboratory setting.  
+
 
 ## Abstract screening procedure and results   
 We used Rayyan QCRI software to screen 2,259 unique bibliographic records downloaded from Scopus. Two researchers (ML, JT) independently performed the screening assessing titles abstracts and keywords of each article. This screening resulted in 225 articles included for full-text assessment and data extraction.   
@@ -630,6 +633,17 @@ Outcome_type_sep <- separate_rows(rawdata_incl, Outcome_type, sep = ", ") #split
 Outcome_type_sep$Outcome_type <- recode(Outcome_type_sep$Outcome_type, "unclear/other (add comment)" = "other / unclear")
 Outcome_type_sep$Outcome_type <- as.factor(Outcome_type_sep$Outcome_type)
 
+#number of papers with 1,2,3... outcomes
+Outcome_type_sep %>% 
+  filter(!is.na(Outcome_type)) %>% 
+  count(Title,) %>%
+  select(n) %>% table()
+  ggplot(aes(x = as.integer(n))) + 
+  geom_histogram() +
+  scale_x_log10() +
+  labs(x = "Number of outcomes", y = "Article count", title = "Number of outcomes per article?")
+
+# berplot of article counts for different outcomes (separated) 
 Outcome_type_sep %>% 
   filter(!is.na(Outcome_type)) %>% 
   count(Outcome_type,) %>%
