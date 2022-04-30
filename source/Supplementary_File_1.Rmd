@@ -1,0 +1,605 @@
+---
+title: "Supplementary File 1"
+output: pdf_document
+authors: "M. Lagisz"
+date: "May 2022"
+editor_options: 
+  chunk_output_type: console
+latex_engine: pdflatex
+include-before:
+- '`\newpage{}`{=latex}'
+---
+
+Supplementary File 1 for "Rapid literature mapping on the recent use of machine learning for wildlife imagery"
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+pacman::p_load(here, magrittr, tidyr, stringr, ggplot2, cowplot, tidyverse, readxl, kableExtra, bibliometrix, data.table, ggalluvial, rworldmap)
+#library(patchwork),  # for arranging ggplots in panels
+library(devtools)
+#devtools::install_github('Mikata-Project/ggthemr')
+#devtools::install_github('cttobin/ggthemr')
+library(ggthemr) #see https://github.com/Mikata-Project/ggthemr#palettes
+# to remove all ggthemr effects later:
+#ggthemr_reset()
+ggthemr('fresh') #select one ggplot theme to be used
+```
+
+# Supplementary methods
+
+## Benchmarking set of papers  
+
+We used a set of 10 manually-located relevant papers from our scoping searches as a benchmark set during search string development. This benchmarking set was used for benchmarking precision of search strings for Scopus database to ensure that most of the relevant can be captured while minimising the number of irrelevant hits.  
+
+References of articles in the benchmarking set:   
+
+1. Whytock, R.C., Swiezewski, J., Zwerts, J.A., Bara-Slupski, T., Koumba Pambo, A.F., Rogala, M., Bahaa-el-din, L., Boekee, K., Brittain, S., Cardoso, A.W., Henschel, P., Lehmann, D., Momboua, B., Kiebou Opepa, C., Orbell, C., Pitman, R.T., Robinson, H.S., Abernethy, K.A. Robust ecological analysis of camera trap data labelled by a machine learning model (2021) Methods in Ecology and Evolution, 12 (6), pp. 1080-1092. DOI: 10.1111/2041-210X.1357   
+
+2. Norouzzadeh, M.S., Morris, D., Beery, S., Joshi, N., Jojic, N., Clune, J. A deep active learning system for species identification and counting in camera trap images (2021) Methods in Ecology and Evolution, 12 (1), pp. 150-161. DOI: 10.1111/2041-210X.13504   
+
+3. Villon, S., Mouillot, D., Chaumont, M., Subsol, G., Claverie, T., Villeger, S. A new method to control error rates in automated species identification with deep learning algorithms (2020) Scientific Reports, 10 (1), art. no. 10972. DOI: 10.1038/s41598-020-67573-7   
+
+4. Ferreira, A.C., Silva, L.R., Renna, F., Brandl, H.B., Renoult, J.P., Farine, D.R., Covas, R., Doutrelant, C. Deep learning-based methods for individual recognition in small birds (2020) Methods in Ecology and Evolution, 11 (9), pp. 1072-1085. DOI: 10.1111/2041-210X.13436   
+
+5. Patel, A., Cheung, L., Khatod, N., Matijosaitiene, I., Arteaga, A., Gilkey, J.W., Jr. Revealing the unknown: Real-time recognition of galápagos snake species using deep learning (2020) Animals, 10 (5), art. no. 806. DOI: 10.3390/ani10050806  
+
+6. Cheng, K., Cheng, X., Wang, Y., Bi, H., Benfield, M.C. Enhanced convolutional neural network for plankton identification and enumeration (2019) PLoS ONE, 14 (7), art. no. e0219570. DOI: 10.1371/journal.pone.0219570   
+
+7. Tabak, M.A., Norouzzadeh, M.S., Wolfson, D.W., Sweeney, S.J., Vercauteren, K.C., Snow, N.P., Halseth, J.M., Di Salvo, P.A., Lewis, J.S., White, M.D., Teton, B., Beasley, J.C., Schlichting, P.E., Boughton, R.K., Wight, B., Newkirk, E.S., Ivan, J.S., Odell, E.A., Brook, R.K., Lukacs, P.M., Moeller, A.K., Mandeville, E.G., Clune, J., Miller, R.S. Machine learning to classify animal species in camera trap images: Applications in ecology (2019) Methods in Ecology and Evolution, 10 (4), pp. 585-590. DOI: 10.1111/2041-210X.13120  
+
+8. Willi, M., Pitman, R.T., Cardoso, A.W., Locke, C., Swanson, A., Boyer, A., Veldthuis, M., Fortson, L. Identifying animal species in camera trap images using deep learning and citizen science (2019) Methods in Ecology and Evolution, 10 (1), pp. 80-91. DOI: 10.1111/2041-210X.13099  
+
+9. Norouzzadeh, M.S., Nguyen, A., Kosmala, M., Swanson, A., Palmer, M.S., Packer, C., Clune, J. Automatically identifying, counting, and describing wild animals in camera-trap images with deep learning (2018) Proceedings of the National Academy of Sciences of the United States of America, 115 (25), pp. E5716-E5725. DOI: 10.1073/pnas.1719367115   
+
+10. Gomez Villa, A., Salazar, A., Vargas, F. Towards automatic wild animal monitoring: Identification of animal species in camera-trap images using very deep convolutional neural networks (2017) Ecological Informatics, 41, pp. 24-32. DOI: 10.1016/j.ecoinf.2017.07.004   
+
+
+DOI-based Scopus search string for retrieving articles in the benchmarking set:   
+( ( DOI ( 10.3390/ani10050806 ) OR DOI ( 10.1038/s41598-020-67573-7 ) OR DOI ( 10.1111/2041-210x.13576 ) OR DOI ( 10.1111/2041-210x.13099 ) OR DOI ( 10.1111/2041-210x.13504 ) OR DOI ( 10.1111/2041-210x.13120 ) OR DOI ( 10.1111/2041-210x.13436 ) OR DOI ( 10.1073/pnas.1719367115 ) OR DOI ( 10.1016/j.ecoinf.2017.07.004 ) OR DOI ( 10.1371/journal.pone.0219570 ) ) )  
+
+## Search string development for Scopus database:   
+
+1. Returning 27,730 hits, 9/10 sensitivity:   
+( TITLE-ABS-KEY ( ( \*automatic\* OR "machine learning" OR "computer learning" OR "deep learning" OR "neural network\*" OR "random forest\*" OR "convolutional neural" OR "convolutional network\*" OR "learning algorithm\*" OR "Support Vector\*" ) AND ( image* OR camera* OR video* OR vision ) AND (\*wild\* OR population* OR environment* OR biodiversity OR ecolog* ) ) ) AND PUBYEAR > 2016   
+
+2. Returning 7,074 hits, 9/10 sensitivity:   
+(TITLE-ABS-KEY ( ( \*automatic\* OR "machine learning" OR "computer learning" OR "deep learning" OR "neural network\*" OR "random forest\*" OR "convolutional neural" OR "convolutional network\*" OR "learning algorithm\*" OR "Support Vector\*" ) AND ( image\* OR camera\* OR video\* OR vision ) AND ( \*wild\* OR population\* OR "species identif\*" OR ( behav\* AND within/ 5 classif\* ) ) ) AND PUBYEAR > 2016  
+
+3. Returning 3,331 hits, 9/10 sensitivity:   
+( TITLE-ABS-KEY ( ( \*automatic\* OR "machine learning" OR "computer learning" OR "deep learning" OR "neural network\*" OR "random forest\*" OR "convolutional neural" OR "convolutional network\*" OR "learning algorithm\*" OR "Support Vector\*" ) AND ( image* OR camera* OR video* OR vision ) AND ( \*wild\* OR population\* OR "species identif\*" OR ( behav* AND within/ 5 classif* ) ) AND NOT ( "natural language" OR acoust* OR vocal* OR clinical* OR industr* OR agricult* OR farm* OR leaf OR husbandry OR food* OR tissue* OR cell* OR cultur* OR forest* OR hydrolog* OR engineer* OR "oxygen species" OR molec* OR bacteria* OR microb* OR chemi* OR spectrom* OR brain* OR drug* ) ) ) AND PUBYEAR > 2016  
+
+4. Returning 2,451 hits, 9/10 sensitivity:   
+( TITLE-ABS-KEY ( ( \*automatic\* OR "machine learning" OR "computer learning" OR "deep learning" OR "neural network\*" OR "random forest\*" OR "convolutional neural" OR "convolutional network\*" OR "learning algorithm\*" OR "Support Vector\*" ) AND ( image* OR camera* OR video* OR vision ) AND ( \*wild\* OR population* OR "species identif\*" OR ( behavio* AND within/ 5 classif* ) OR ( behavio* AND within/ 5 recogn* ) ) AND NOT ( "natural language" OR acoust* OR vocal* OR clinical* OR industr* OR agricult* OR farm* OR leaf OR husbandry OR food* OR tissue* OR cell* OR cultur* OR forest* OR hydrolog* OR engineer* OR "oxygen species" OR molec* OR bacteria* OR microb* OR chemi* OR spectrom* OR brain* OR drug* OR patient* OR cancer* OR smoking OR disease OR diabet* OR scan* OR "X-ray" OR "health care" OR participant* OR emotion* OR speech OR proceedings ) ) ) AND PUBYEAR > 2016   
+
+5. Returning 2,853 hits, 10/10 sensitivity:   
+( TITLE-ABS-KEY ( ( \*automatic\* OR "machine learning" OR "computer learning" OR "deep learning" OR "neural network\*" OR "random forest\*" OR "convolutional neural" OR "convolutional network\*" OR "learning algorithm\*" OR "Support Vector\*" ) AND ( image\* OR camera\* OR video\* OR vision ) AND ( \*wild\* OR population\* OR "species identif\*" OR "species label\*" OR "species richness" OR ( behavio* AND within/ 10 classif* ) OR ( behavio* AND within/ 10 recogn* ) ) AND NOT ( "natural language" OR accelomet* OR clinical* OR industr* OR agricult* OR farm* OR leaf OR husbandry OR food* OR tissue* OR cell* OR cultur* OR "tree growth" OR hydrolog* OR engineer* OR "oxygen species" OR molec* OR bacteria* OR microb* OR chemi* OR spectrom* OR brain* OR drug* OR patient* OR cancer* OR smoking OR disease OR diabet* OR scan* OR "X-ray" OR "health care" OR participant* OR emotion* OR employee* OR speech OR proceedings ) ) ) AND PUBYEAR > 2016    
+
+6. Returning 2,051 hits, 9/10 sensitivity:   
+( TITLE-ABS-KEY ( ( \*automatic\* OR "machine learning" OR "computer learning" OR "deep learning" OR "neural network\*" OR "random forest\*" OR "convolutional neural" OR "convolutional network\*" OR "learning algorithm*" OR "Support Vector*" ) AND ( image* OR camera* OR video* OR vision ) AND ( animal* OR population* OR "species identif\*" OR "species label\*" OR "species richness" OR ( behavio* AND within/ 10 classif* ) OR ( behavio* AND within/ 10 recogn* ) ) AND NOT ( "natural language" OR "sign language" OR accelomet* OR clinical* OR industr* OR agricult* OR farm* OR leaf OR husbandry OR food* OR tissue* OR cell* OR cultur* OR wildfire* OR "tree growth" OR forestry OR hydrolog* OR engineer* OR "oxygen species" OR molec* OR bacteria* OR microb* OR chemi* OR spectrom* OR brain* OR drug* OR patient* OR cancer* OR smoking OR disease OR diabet* OR landsat* OR sentinel OR satellite* OR "land cover" OR "land use" OR "vegetation map\*" OR galax\* OR "Google Earth" OR scan* OR "X-ray" OR "health care" OR participant* OR emotion* OR employee* OR speech OR proceedings ) ) ) AND PUBYEAR > 2016  
+
+## Literature search   
+
+We run a search in Scopus on 2021/10/10 using a pre-piloted search string (for details on the development including validation set refer a dedicated Notion notebook):   
+
+( TITLE-ABS-KEY ( ( \*automatic\* OR "machine learning" OR "computer learning" OR "deep learning" OR "neural network\*" OR "random forest\*" OR "convolutional neural" OR "convolutional network\*" OR "learning algorithm\*" OR "Support Vector\*" ) AND ( image* OR camera* OR video* OR vision ) AND ( \*wild\* OR population* OR "species identif\*" OR "species label\*" OR "species richness" OR ( behavio* AND within/ 10 classif* ) OR ( behavio* AND within/ 10 recogn* ) ) AND NOT ( "natural language" OR "sign language" OR accelomet* OR clinical* OR industr* OR agricult* OR farm* OR leaf OR husbandry OR food* OR tissue* OR cell* OR cultur* OR wildfire* OR "tree growth" OR forestry OR hydrolog* OR engineer* OR "oxygen species" OR molec* OR bacteria* OR microb* OR chemi* OR spectrom* OR brain* OR drug* OR patient* OR cancer* OR smoking OR disease OR diabet* OR landsat* OR sentinel OR satellite* OR "land cover" OR "land use" OR "vegetation map\*" OR galax\* OR "Google Earth" OR scan* OR "X-ray" OR "health care" OR participant* OR emotion* OR employee* OR speech OR proceedings ) ) ) AND PUBYEAR > 2016    
+
+Retrieved bibliographic records were then downloaded and screened for inclusion.    
+
+
+## Inclusion criteria at the title and abstract screening phase   
+
+Following PICO framework, we included articles if all criteria below were fulfilled: 
+
+- **Population:** wild or semi-wild vertebrate species (exclude domestic or farmed animals, invertebrates, museum specimens).     
+- **Intervention** / **Innovation:** use of computer vision machine learning algorithms (include neural-network type methods, such as deep learning, CNN), support vector, random forest) for automated or semi-automated processing of image data (e.g. from camera traps, video tracking, thermal imaging) at a scale where individual animals are visible (include aerial and drone images (exclude images gathered from satellites, biologing, X-ray, MRI images or equivalent *).   
+
+- **Comparator** / **Context**: images taken in the wild or semi-wild (includes zoo enclosures, excludes lab-based or agricultural/aquaculture/pet studies).   
+
+- **Outcomes**: analyses focus on animal / species individual recognition/classification or animal behaviour recognition/classification.   
+
+- Additional criteria: studies published in last 5 years (2017-2021), peer-reviewed (including full-text conference proceedings).   
+
+*Note: Aerial and drone images are used to capture images of medium to large vertebrates, such as birds and ungulates; however, satellite images are only useful for huge mammals such as elephants and whales and require different processing pipelines. Biologging image-based studies attach small cameras to animals to record their movements and activities only and usually require capturing the animals before releasing them back in the wild. X-ray and MRI images are typically used in a laboratory setting or at sub-individual scale and were excluded.  
+
+
+## Abstract screening procedure and results   
+We used Rayyan QCRI software to screen unique bibliographic records downloaded from Scopus. Thre researchers (ML, JT, RF) independently performed the screening assessing titles abstracts and keywords of each article. This screening resulted in 225 articles included for full-text assessment and data extraction.   
+
+## Inclusion criteria at full-text screening   
+- Full text available   
+- Full-text studies should fulfill the same criteria as defined for the title and abstract screening phase   
+
+## Full text screening and data extraction   
+Out of the 225 papers included, we obtained full-text for 215 papers.   
+For data extraction we used a two-part custom questionnaire implemented as a Google Form (Table S1). To pilot the form, we randomly selected 14 papers for independent screening aand extraction by three researchers (ML, JT, RF). We resolved disagreements by discussion until consensus was reached, and we refined the questionnaire form before the main round of full-text screening and data extraction.  
+One researcher (ML) performed full-text screening and data extraction for the remaining 195 papers. Second researcher (RF) cross-checked 58 of these papers for accuracy and to potentially resolve cases where information provided in the papers was unclear. We used GoogleSheet to record data checks and any additional comments. There, we also recoded whether a given paper was used in the pilot rounds, and if it was included or excluded from the final dataset, with a note on the main reson for exclusion.  
+
+
+#### Table S1 - full-text assessment and data extraction form 
+Question                   | Answer options  
+---------------------------| -------------- 
+Paper's title:	| [text]   
+First author's family name: | [text]   
+Publication year: | [number]   
+Journal name:	 |[text]     
+Article doi: |  [text] 	
+C1. Peer-reviewed empirical study | [yes; no; unsure/other]  		
+C2. Is full text available in English? |  [yes; no; unsure/other] 		
+C3. Population: wild or semi-wild vertebrate species? | [yes; no; unsure/other]  		
+C4. Intervention / Innovation: use of computer vision machine learning algorithms (for automated or semi-automated processing of image data at a scale where individual animals are visible)?: |  [yes; no; unsure/other] 	 
+C5. Comparator / Context: are the studied animals in the wild or semi-wild?	 |  [yes; no; unsure/other]  		
+C6. Outcomes: focus on animal / species individual recognition / classification or animal behaviour recognition / classification?: | [yes; no; unsure/other]    		
+Q1. Number of studied species | [number]  	
+Q2. Study species	(Latin name) | [text]    
+Q3. Studied species group: | [mammals; birds; reptiles; amphibians; fishes; other/unclear]*  	
+Q4. Used image type source: | [camera trap or surveillance camera (fixed); aerial (including drone); hand camera (or mobile phone camera); other/unclear]*  		
+Q5. Study context or setting: | [wild; semi-wild; unclear/other]*  		
+Q6. Location country/region: | [text]     
+Q7. Location details: | [text]	   
+Q8. Algorithm type: | [Neural Network; Random forest; Gradient boosting model; Support Vector Machines; Rule-based learners; Decision trees; K-Nearest Neighbour; unclear/other]*    
+Q9. Outcome type:	 | [counting individuals (at given time); individual recognition (re-identification); species recognition/classification (class/object detection); behaviour detection (at given time); tracking (following through space); behaviour classification (changes over time); unclear/other]*  
+Q10. Analysis code | [yes; no; unclear/other]   	
+
+----
+*Note:* * indicates plural variables (i.e. more than one answer option can be chosen).
+
+Each question in the data extraction form (**Table S1**) was followed by a dedicated comment field used to record any additional details, including relevant quotes from the paper. We excluded any papers that were coded as "no" at questions C1 to C6 (full-text screening questions - whether the paper fulfills our inclusion criteria), i.e. these papers were not subject to any further data extraction and analyses.  
+
+After data extraction additional data were added to the GoogleSheet, as follows:   
+- Q7_coordinates: latitude and longitude of the study location, as in the paper or from Google Maps, if not reported      
+- Q7_location_unclear: 0 = "clear" (location at least at the level of national park, state, province, city, or equivalent - reported in the article or inferred from the data set name); 1 = "unclear", location either not reported or cannot be assigned to a specific location (e.g., global data, broad regions such as Arctic, Northern Atlantic, Africa, America)   
+- Pilot: whether study was used in the piloting phase	
+- Checked: whether record was cross-checked by an indpendent researcher	   
+- Checking_comments: any comments from data extraction checking	  
+- Changed:	whether record was changed after cross-checking    
+- Changed_comment:	how record was changed after cross-checking   
+- Included: whether study was included in the final data set for extraction    
+- Exclusion reason: main reason for excluding study from the final data set for extraction, if excluded     
+- Journal category: based on the journal title and Scimago Journal & Country Rank (https://www.scimagojr.com/). The following journals were categorised as multidisciplinary: "Scientific Reports", "Science Advances", "Proceedings of the National Academy of Sciences of the United States of America". The following journals had "ecology" in SUBJECT AREA AND CATEGORY information, or in their title and were thus classified as "ecology": "Behavioral Ecology and Sociobiology", "Ethology", "Global Ecology and Conservation", "Integrative Zoology", "Mammal Study", "Wildlife Society Bulletin", "Journal of Coastal Research", "Condor", "Methods in Ecology and Evolution", "Environmental Monitoring and Assessment", "Remote Sensing in Ecology and Conservation", "Ornis Fennica", "Ecology and Evolution", "European Journal of Wildlife Research", "Frontiers in Marine Science", "Conservation Biology", "Animals", "Ecological Informatics". The remaining journals were classfied as computer science / technology".   
+
+
+## Supplementary Results
+This section contains additional tables and plots complementing results presented in the main text of the manuscript.   
+
+```{r load raw data, eval = TRUE}
+rawdata <- read_excel(here("data", "mapping_dataset_reconciled.xlsx"), sheet = 1)
+# dim(rawdata) #225 rows 47 columns
+```
+
+#### Table S2
+List of articles excluded at full-text screening, with main reasons for exclusion.     
+
+```{r data table excluded articles, eval = TRUE}
+#table(rawdata$"exclusion_reason") #table of exclusion reasons for the excluded studies
+
+#remove included studies and select a few relevant columns
+rawdata_excl <- rawdata %>% filter(Included == "0") %>% 
+  select(c("First author's family name:", "Paper's title:", 
+           "Journal name:" , "Publication year:", "Exclusion reason")) 
+#dim(rawdata_excl) #16 articles, 6 columns
+#names(rawdata_excl)
+names(rawdata_excl) <- c("First_author", "Title", "Journal", "Year", "Exclusion_reason")
+#shorten one of the exclusion resons type  
+rawdata_excl$Exclusion_reason <- 
+  recode(rawdata_excl$Exclusion_reason, 
+         "not focusing on animal / species individual recognition / 
+         classification or animal behaviour recognition / classification" = "wrong outcome type")
+
+#make a table of excluded  studies
+kbl(rawdata_excl, 
+    format = "latex",
+    align = "l",
+    booktabs = TRUE,
+    longtable = TRUE,
+    linesep = "") %>%
+  column_spec(1, width = "1.5cm") %>%
+  column_spec(2, width = "5cm") %>%
+  column_spec(3, width = "3cm") %>%
+  kable_styling(latex_options = c("hold_position", "repeat_header"), font_size = 6)
+  #kable_styling(full_width = T)
+
+```
+
+#### Table S3
+List of included articles with key bibliographic information.   
+
+```{r data table included articles, eval = TRUE}
+#remove 4 excluded studies and remove all columns with "Comment", "checked" and  first 2 columns
+rawdata_incl <- rawdata %>% filter(Included == "1") %>% 
+  select(c("First author's family name:", "Paper's title:", "Journal name:", "Publication year:")) 
+
+#make a table of included studies
+names(rawdata_incl) <- c("First_author", "Title", "Journal", "Year")
+
+#make a table of included  studies
+kbl(rawdata_incl, 
+    format = "latex",
+    align = "l",
+    booktabs = TRUE,
+    longtable = TRUE,
+    linesep = "") %>%
+  column_spec(1, width = "1.5cm") %>%
+  column_spec(2, width = "8cm") %>%
+  column_spec(3, width = "5cm") %>%
+  kable_styling(latex_options = c("hold_position", "repeat_header"), font_size = 6)
+  #kable_styling(full_width = T)
+
+```
+
+### Preprocessing extracted data    
+
+Data cleaning before generating summaries and plotting.      
+
+```{r clean column names, eval = TRUE}
+
+#remove unnecessary columns
+rawdata_incl <- rawdata %>% 
+  filter(Included == "1") %>% 
+  select(-starts_with("C")) %>% 
+  select(-c("Timestamp", "Respondent's initials:", "Pilot", "Included", "Exclusion reason"))
+
+#replace column names with shorter variable names for rawdata_incl analyses
+names(rawdata_incl) <- c("Title",
+                 "Author",
+                 "Year",
+                 "Journal",
+                 "DOI",
+                 "Species_number",
+                 "Study_species",
+                 "Studied_species_type",
+                 "Image_source_type",
+                 "Study_setting",
+                 "Location_country",
+                 "Location_details",
+                 "Location_coordinates",
+                 "Location_unclear",
+                 "Algorithm_type",
+                 "Outcome_type",
+                 "Analysis_code")
+
+#unique(rawdata_incl$Journal)
+
+# classify journals into comp.sci vs. ecology journals
+rawdata_incl$Journal_discipline <- 
+  recode(rawdata_incl$Journal, 
+         "Behavioral Ecology and Sociobiology" = "ecology", 
+         "Ethology" = "ecology", 
+         "Global Ecology and Conservation" = "ecology", 
+         "Integrative Zoology" = "ecology", 
+         "Mammal Study" = "ecology", 
+         "Wildlife Society Bulletin" = "ecology", 
+         "Journal of Coastal Research" = "ecology", 
+         "Condor" = "ecology", 
+         "Methods in Ecology and Evolution" = "ecology", 
+         "Environmental Monitoring and Assessment" = "ecology", 
+         "Remote Sensing in Ecology and Conservation" = "ecology", 
+         "Ornis Fennica" = "ecology", 
+         "Ecology and Evolution" = "ecology", 
+         "European Journal of Wildlife Research" = "ecology", 
+         "Frontiers in Marine Science" = "ecology", 
+         "Conservation Biology" = "ecology", 
+         "Animals" = "ecology", 
+         "Ecological Informatics" = "ecology", 
+         "Scientific Reports" = "multidisciplinary", 
+         "Science Advances" = "multidisciplinary", 
+         "Proceedings of the National Academy of Sciences of the United States of America" = 
+           "multidisciplinary", 
+         .default = "computer science / technology")
+
+#table(rawdata_incl$Journal_discipline)
+```
+
+
+### Supplementary data summaries and plots  
+
+**Figure S1** 
+Displaying annual counts of included articles.   
+
+```{r plot year, eval = TRUE}
+count(rawdata_incl, Year) %>%
+  mutate(class = factor(Year, levels = Year)) %>%
+  ggplot(aes(x = class, y = n)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 5) +
+  scale_y_continuous(breaks = seq(0, 60, 10)) +
+  labs(x = "", y = "Article count", title = "When it was published?")
+```
+
+#### Number of species / animal classes used 
+
+Most data sets have prespecified number of animal species / classes present. Class can represent a species or a higher taxonomic group, such as genus, family, order, super-order, etc. (even "animals" can ba a class). Classes of non-animal objects (e.g. humans, vehicles) were not counted. When more than one dataset was used, the number was extracted for the biggest dataset.     
+
+A brief summary statistics on the number of animal species/classes per study.
+
+```{r Species_number summary, eval = TRUE}
+#table(rawdata_incl$Species_number == "NA") #13 values of NA = no information in the paper
+#table(as.integer(rawdata_incl$Species_number), useNA = "always")
+
+# summarise Species_number column
+rawdata_incl %>% 
+  filter(Species_number != "NA") %>% 
+    mutate(Species_number_NUM = as.numeric(Species_number)) %>% 
+    summarise(min = min(as.numeric(Species_number_NUM)),
+              max = max(as.numeric(Species_number_NUM)),
+              mean = mean(Species_number_NUM),
+              sd = sd(Species_number_NUM),
+              median = median(Species_number_NUM),
+              n = n()
+            )
+```
+
+#### Table S4
+List of papers with > 100 species/animal classes.  
+
+```{r prep Species_number over 100, eval = TRUE}
+
+#Filter studies and select a few relevant columns
+rawdata_incl %>% 
+  filter(Species_number != "NA") %>% 
+  mutate(Species_number_NUM = as.integer(Species_number)) %>% 
+  filter(Species_number_NUM > 100) %>% 
+  select(c("Author", "Title", "Journal", "Year", "Studied_species_type", "Species_number")) -> 
+  rawdata_topspeciesnumbers
+
+#make a table of included  studies
+kbl(rawdata_topspeciesnumbers, 
+    format = "latex",
+    align = "l",
+    booktabs = TRUE,
+    longtable = TRUE,
+    linesep = "") %>%
+  column_spec(1, width = "1.5cm") %>%
+  column_spec(2, width = "6cm") %>%
+  column_spec(3, width = "3cm") %>%
+  column_spec(4, width = "1cm") %>%
+  column_spec(5, width = "2cm") %>%
+  kable_styling(latex_options = c("hold_position", "repeat_header"), font_size = 6)
+```
+
+**Figure S2** 
+Displaying total counts of papers by the settings in which animal images were taken.  
+Note:  a single study could be coded as using one or more categories of settings, e.g. mix of images from the wild and captive (semi-wild) animals.   
+
+```{r plot study setting types, fig.dim = c(8, 2), eval = TRUE}
+#table(rawdata_incl$Study_setting, useNA = "always") #0 NA, need to split at comma
+rawdata_incl$Study_setting <- recode(rawdata_incl$Study_setting, 
+                                     "unclear/other" = "other / unclear") #standarise wording
+
+Study_setting_sep <- separate_rows(rawdata_incl, 
+                                   Study_setting, sep = ", ") #split rows with multiple values
+Study_setting_sep$Study_setting <- as.factor(Study_setting_sep$Study_setting)
+#table(Study_setting_sep$Study_setting, useNA = "always") 
+
+Study_setting_sep %>% 
+  filter(!is.na(Study_setting)) %>% 
+  count(Study_setting) %>%
+  arrange(n) %>%
+  mutate(class = factor(Study_setting, levels = Study_setting)) %>%
+  ggplot(aes(x = class, y = n)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 1) +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 150, 10)) +
+  labs(x = "", y = "Article count", title = "What types of settings were studied?", 
+       caption = "Note: some studies used more than one")
+```
+
+
+**Figure S3**   
+Barplot of counts of a country or a larger region where animal images were collected. A single study could be coded as using images from one or more countries/regions. Some studies using images of captive animals kept in zoos likely across mutiple countries were coded as "global" (often images sourced from the Internet/social platforms).   
+ 
+```{r clean location country names, eval = TRUE}
+#table(rawdata_incl$Location_country, useNA = "always") #0 NA, need to fix some names
+rawdata_incl$Location_country <- gsub("Botswanam Australia", "Botswana, Australia", 
+                                      rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("Falkland \\(Malvinas\\) Islands", "Falkland Islands", 
+                                      rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("Asutralia", "Australia", 
+                                      rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("Soith Africa", "South Africa", 
+                                      rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("The Netherlands" , "Netherlands" , 
+                                      rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("NZ", "New Zealand", 
+                                      rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("Korea", "South Korea", 
+                                      rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("Congo", "Republic of Congo", 
+                                      rawdata_incl$Location_country)
+rawdata_incl$Location_country <- gsub("UAE", "United Arab Emirates", 
+                                      rawdata_incl$Location_country)
+Location_country_sep <- separate_rows(rawdata_incl, Location_country, sep = ", ") 
+Location_country_sep$Location_country <- as.factor(Location_country_sep$Location_country)
+```
+
+**Figure S4**  
+A barplot of the counts of articles originating form a given country / larger region. "Global" are usually datasets based on images collected from the Internet or social media.    
+
+```{r plot location country barplot, fig.dim = c(8, 6), eval = TRUE}
+
+Location_country_sep %>% 
+  filter(Location_country!="unclear") %>% 
+  count(Location_country) %>%
+  arrange(n) %>%
+  mutate(class=factor(Location_country, levels = Location_country)) %>%
+  ggplot(aes(x = class, y = n)) +
+  geom_bar(stat = "identity", position = "dodge") +
+ # geom_text(aes(label = scales::comma(n)), hjust = 0, nudge_y = 1) +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0,30,5)) +
+  labs(x = "", y = "Article count", title = "Most popular location country/region?", 
+       caption = "Note: some studies used more than one")
+```
+
+**Figure S5**  
+Location coordinates representing either a specific location (green circles) or centroids of a broader region (orange circles) where animal images originated from. Darker circles indicate a larger number of studies for a given location. "Global" image datasets (e.g. gathered from the Internet or social media) are not shown.    
+
+```{r location coordinates, eval = TRUE}
+#table(rawdata_incl$Location_unclear, useNA = "always") 
+# 1 = yes for 78 studies, 3 is NA (global or multi-location studies)
+#table(is.na(rawdata_incl$Location_coordinates), useNA = "always") 
+# 133 have coordinates, 59 have no
+
+#table(rawdata_incl$Study_setting, rawdata_incl$Location_unclear, useNA = "always") 
+# 97+7 wild/semi-wild have clear location
+#table(is.na(rawdata_incl$Location_coordinates), rawdata_incl$Location_unclear, useNA = "always") 
+# 110 have coordinates and clear location, 56 of 78 with unclear location have no coordinates
+#table(is.na(rawdata_incl$Location_coordinates), rawdata_incl$Study_setting, useNA = "always") 
+# 116 of the wild-based studies has coordinates
+
+# to plot dots at coordinates for wild-based studies only - 
+# first filter data and split coordinates column into longitude and latitude:
+rawdata_incl %>% filter(Study_setting == "wild" | Study_setting == "wild, semi-wild") %>% 
+  filter(is.na(Location_coordinates) == FALSE) %>% 
+  separate(col = Location_coordinates, into = c("Latitude", "Longitude") , sep = ", ") -> 
+  coordinates_sep
+coordinates_sep$Longitude <- as.numeric(coordinates_sep$Longitude)
+coordinates_sep$Latitude <- as.numeric(coordinates_sep$Latitude)
+coordinates_sep$Approximate_location <- recode(coordinates_sep$Location_unclear, 
+                                               "0" = "no", "1" = "yes")
+
+map.world <- map_data("world")
+
+#make a plot
+ggplot() +
+  geom_map(
+    data = map.world, map = map.world,
+    aes(long, lat, map_id = region),
+    color = "white", fill = "lightgray", size = 0.1
+  ) +
+  geom_point(
+    data = coordinates_sep,
+    aes(Longitude, Latitude, color = Approximate_location), size = 4,
+    alpha = 0.4, position = position_jitter(width = 2, height = 2)
+  )  +
+  scale_colour_manual(values = c("darkgreen", "orange")) +
+  theme(legend.position = "top")
+```
+
+**Figure S6**  
+Barplot of the main types of machine learning algorithms used in the included studies. A single study could be coded as using one or more types.     
+
+```{r plot algorithm type, fig.dim = c(8, 3), eval = TRUE}
+#table(rawdata_incl$Algorithm_type, useNA = "always") #0 NA, need to split at comma
+Algorithm_type_sep <- separate_rows(rawdata_incl, Algorithm_type, sep = ", ") 
+Algorithm_type_sep$Algorithm_type <- recode(Algorithm_type_sep$Algorithm_type, 
+                                            "unclear/other" = "other / unclear")
+Algorithm_type_sep$Algorithm_type <- as.factor(Algorithm_type_sep$Algorithm_type)
+
+Algorithm_type_sep %>% 
+  filter(!is.na(Algorithm_type)) %>% 
+  count(Algorithm_type) %>%
+  arrange(n) %>%
+  mutate(class = factor(Algorithm_type, levels = Algorithm_type)) %>%
+  ggplot(aes(x = class, y = n)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 1) +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 200, 50)) +
+  labs(x = "", y = "Article count", title = "What types of algorithms were used?", 
+       caption = "Note: some studies used more than one")
+```
+
+**Figure S7**   
+Barplot of the main types of outcomes / purposes of analyses in the included studies. A single study could be coded as using one or more types.    
+
+```{r plot outcome type, fig.dim = c(8, 3), eval = TRUE}
+#table(rawdata_incl$Outcome_type, useNA = "always") #1 NA, need to split at comma
+Outcome_type_sep <- separate_rows(rawdata_incl, Outcome_type, sep = ", ")
+Outcome_type_sep$Outcome_type <- recode(Outcome_type_sep$Outcome_type, 
+                                        "unclear/other (add comment)" = "other / unclear")
+Outcome_type_sep$Outcome_type <- as.factor(Outcome_type_sep$Outcome_type)
+
+# berplot of article counts for different outcomes (separated) 
+Outcome_type_sep %>% 
+  filter(!is.na(Outcome_type)) %>% 
+  count(Outcome_type,) %>%
+  arrange(n) %>%
+  mutate(class=factor(Outcome_type, levels = Outcome_type)) %>%
+  ggplot(aes(x = class, y = n)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 1) +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 200, 50)) +
+  labs(x = "", y = "Article count", title = "What types of outcomes were analysed?", 
+       caption = "Note: some studies used more than one")
+```
+
+
+**Figure S8**    
+Barplot of total counts of journals by discipline.    
+
+```{r journal discipline plot, fig.dim = c(8, 2), eval = TRUE}
+rawdata_incl %>% 
+  filter(!is.na(Journal_discipline)) %>% 
+  count(Journal_discipline) %>%
+  arrange(n) %>%
+  mutate(class = factor(Journal_discipline, levels = Journal_discipline)) %>%
+  ggplot(aes(x = class, y = n, fill = Journal_discipline)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 1) +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 200, 50)) +
+  scale_fill_manual(values = c("#E57E7E", "#C3E57E", "#E5B17E")) + 
+  theme(legend.position = "none") + 
+  labs(x = "", y = "Article count", title = "What disciplines journals represent?")
+```
+
+### Bibliometric analyses   
+
+These analyses are based on the information extracted from bibliographic records downloaded from Scopus. Initial preprocessing and summaries using bibliometrix R package. Subsequently this data was combined with manually coded data from the full texts.      
+Load and export author affiliation country from bibliographic records (*scopus_AI_1and2.bib*).    
+
+```{r load bib, eval = TRUE}
+bib <- convert2df(here("data", "scopus_AI_1and2.bib"), dbsource = "wos", format = "bibtex") 
+
+# Initial data cleaning and merging with manually coded data frame. 
+
+# Remove all non-alphanumeric, punctuation and extra white spaces in bib object
+bib$TI2 <- gsub("[^[:alnum:] ]", "", bib$TI) %>% str_replace_all(.,"[ ]+", " ")
+
+# Remove all non-alphanumeric, punctuation and extra white spaces in rawdata_incl object
+rawdata_incl$TI2 <- str_to_upper(gsub("[^[:alnum:] ]", "", rawdata_incl$Title)) %>% 
+  str_replace_all(.,"[ ]+", " ")
+
+# Clean-up of 6 non-matching titles before merging - 
+# replace title TI2 in bib (not-matching) with TI2 from rawdata_incl
+bib[bib$TI2 %like% "MODELLING WILDLIFE SPECIES ABUNDANCE USING", "TI2"] <- 
+  rawdata_incl[rawdata_incl$TI2 %like% "MODELLING WILDLIFE SPECIES ABUNDANCE USING", "TI2"]
+bib[bib$TI2 %like% "COUNTING BREEDING GULLS", "TI2"] <- 
+  rawdata_incl[rawdata_incl$TI2 %like% "COUNTING BREEDING GULLS", "TI2"]
+bib[bib$TI2 %like% "COMPARING CLASSAWARE AND PAIRWISE LOSS FUNCTIONS", "TI2"] <- 
+  rawdata_incl[rawdata_incl$TI2 %like% "COMPARING CLASSAWARE AND PAIRWISE LOSS FUNCTIONS", "TI2"]
+bib[bib$TI2 %like% "BELUGA WHALE DETECTION IN THE CUMBERLAND", "TI2"] <- 
+  rawdata_incl[rawdata_incl$TI2 %like% "BELUGA WHALE DETECTION IN THE CUMBERLAND", "TI2"]
+bib[bib$TI2 %like% "REVEALING THE UNKNOWN REALTIME RECOGNITION OF", "TI2"] <- 
+  rawdata_incl[rawdata_incl$TI2 %like% "REVEALING THE UNKNOWN REALTIME RECOGNITION OF", "TI2"]
+
+#Join the data frames
+bib_title <- left_join(rawdata_incl, bib, by = "TI2")
+results <- biblioAnalysis(bib_title, sep = ";") #this calculates the main bibliometric measures, 
+#sum(results$CountryCollaboration$SCP) #4only 3 multi-country papers out of 173 with data
+```
+
+**Figure S9**  
+A barplot of country assigned to each publication based on the affiliation country of the first author. Co-authorship type is based on country of all authors of a given publication. SCP indicates all authors were affiliated with  the same country. MCP indicates international co-authorship.   
+
+```{r plot first author country collab type, fig.dim = c(8, 6)}
+#reshape dataframe into long format:
+CountryCollaboration_ord <- results$CountryCollaboration
+CountryCollaboration_ord$Country <- factor(CountryCollaboration_ord$Country)
+CountryCollaboration_long <- gather(CountryCollaboration_ord, Collaboration, 
+                                    value, MCP:SCP, factor_key=TRUE)
+#reorder by total frequency
+CountryCollaboration_long$Country <- factor(CountryCollaboration_ord$Country, levels = levels(reorder(CountryCollaboration_ord$Country, rowSums(CountryCollaboration_ord[-1]))) )
+
+CountryCollaboration_long %>%
+  arrange(value) %>%
+  ggplot(aes(fill = Collaboration, y = value, x = Country)) + 
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  theme(legend.position = "top") +
+  labs(x = "", y = "Proportion", title = "Author collaboration type by country?", 
+       caption = "SCP: Single Country Publications, MCP: Multiple Country Publications")
+```
