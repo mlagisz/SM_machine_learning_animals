@@ -13,9 +13,10 @@ This script creates files with the figures for the main text of the manuscript.
 It is not intended to be knitted.   
 
 
-```{r setup, include=FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = F, warning = F, message = F)
 pacman::p_load(here, magrittr, tidyr, stringr, ggplot2, cowplot, tidyverse, here, readxl, bibliometrix, igraph, data.table, ggalluvial, rworldmap, rotl, ape, rphylopic, patchwork, ggplotify)
+
 ```
 
 ### Load and preprocess extracted data    
@@ -77,6 +78,7 @@ Location_country_sep <- separate_rows(rawdata_incl, Location_country, sep = ", "
 Location_country_sep$Location_country <- as.factor(Location_country_sep$Location_country) #as factor
 #table(Location_country_sep$Location_country, useNA = "always") 
 #unique(Location_country_sep$Location_country) #48 locations: 38 countries, others are either global/unclear or regions
+
 ```
 ```
 
@@ -89,12 +91,14 @@ fig1A <- rawdata_incl %>%
   select(Species_number) %>% 
   ggplot(aes(x = as.integer(Species_number))) + 
   geom_histogram(fill="grey") +
+  coord_flip() +
   theme_classic() +
   scale_x_log10() +
-  labs(x = "Number", y = "Article count", title = "Number of species/animal classes?") +
+  labs(x = "Number of species/classes", y = "Article count", title = "Number of species/animal classes?") +
   theme(axis.title.y = element_text(angle = 90, hjust = 0.5, vjust = 0.5))
 
 fig1A
+
 ```
 
 ```{r fig1B Animal types barplot}
@@ -121,20 +125,13 @@ fig1B <- Studied_species_type_sep %>%
   labs(x = "", y = "Article count", title = "What types of animals were studied?")
 
 fig1B
+
 ```
 
 ```{r fig1C study species one recolor}
 # A barplot with color-coded biological groups for one-species studies   
 
 #Studied_species_type custom colors: "amphibians" = "#DED42F", "birds" = "#57826F","fishes" = "#BE1D2D", "mammals" = "#4A3D4F", "other" = "#3E6735", "reptiles" = "#B45454", "unclear" = "#CEF3C6")# #assign colors to biological groups, https://r-charts.com/color-palettes/ using paletteer_d("colorBlindness::paletteMartin")
-#change:
-#mammals #4A3D4F to #4A3D4F
-#birds #B66DFF to #57826F
-#"fishes" = "#006DDB" to #BE1D2D
-#"other" = "#924900" to #3E6735
-#"reptiles" = "#490092" to #B45454
-#"amphibians" = "#DED42F" to #DED42F
-#"unclear" = "#CEF3C6" to #CEF3C6
 
 rawdata_incl %>% filter(Species_number == "1") %>% 
    filter(Study_species != "unclear") %>% select(Study_species, Studied_species_type) %>%
@@ -162,6 +159,7 @@ fig1C <- rawdata_incl %>% filter(Species_number == "1") %>%
   theme(legend.position = "none")
 
 fig1C
+
 ```
 
 ```{r fig1C_inset species individual recognition}
@@ -241,6 +239,7 @@ p_inset <- as.ggplot(function() {
 
 p_inset
 #fig1C + inset_element(p_inset, left = 0.3, bottom = 0.1, right = 0.9, top = 0.95)
+
 ```
 
 ```{r fig1 assemble}
@@ -252,7 +251,7 @@ fig1A / fig1B / fig1C + inset_element(p_inset, left = 0.35, bottom = 0.01, right
   theme(plot.tag.position = c(0.03,0.97), plot.tag = element_text(size = 14, face = "bold"))
 
 #save the figure 
-ggsave(here("plots", "Figure1_v0.pdf"), width = 16, height = 20, units = "cm", dpi = 300, scale = 1.3)
+ggsave(here("plots", "Figure1_v1.pdf"), width = 16, height = 20, units = "cm", dpi = 300, scale = 1.3)
 
 ```
 
@@ -278,10 +277,11 @@ fig2A <- Image_source_type_sep %>%
   geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 1) +
   coord_flip() +
   scale_y_continuous(breaks = seq(0, 150, 10)) +
-  scale_x_discrete(labels=c("other / unclear", "aerial / drone", "hand / mobile camera", "fixed camera")) +
+  scale_x_discrete(labels=c("other / unclear", "aerial / drone", "hand / mobile camera", "fixed camera / camera trap")) +
   labs(x = "", y = "Article count", title = "What types of images were studied?")
 
 fig2A
+
 ```
 
 ```{r fig2B plot years and image types}
@@ -297,6 +297,7 @@ fig2B <- Image_source_type_sep %>%
   labs(x = "", y = "Article count", title = "How image source changed?")
 
 fig2B
+
 ```
 
 ```{r fig2 assemble}
@@ -308,7 +309,8 @@ fig2A / fig2B +
   theme(plot.tag.position = c(0.03,0.97), plot.tag = element_text(size = 14, face = "bold"))
 
 #save the figure 
-ggsave(here("plots", "Figure2_v0.pdf"), width = 16, height = 10, units = "cm", dpi = 300, scale = 1.3)
+ggsave(here("plots", "Figure2_v1.pdf"), width = 16, height = 10, units = "cm", dpi = 300, scale = 1.3)
+
 ```
 
 
@@ -340,6 +342,7 @@ fig3A <- Outcome_algorithm_type_sep %>%
   labs(x = "Algorithm type", y = "Outcome type", title = "What algorithm for what outcome?")
 
 fig3A
+
 ```
 
 ```{r fig3B plot years and algorithm types}
@@ -360,18 +363,19 @@ fig3B <- Algorithm_type_sep %>%
   labs(x = "", y = "Article count", title = "How algorithm type changed?")
 
 fig3B
+
 ```
 
 ```{r fig3 assemble}
 #assemble the panels
 
 fig3A / fig3B +
-  plot_layout(ncol = 1, nrow = 2, heights = c(4, 1)) +
+  plot_layout(ncol = 1, nrow = 2, heights = c(5, 1)) +
   plot_annotation(tag_levels = "A") &
   theme(plot.tag.position = c(0.03,0.97), plot.tag = element_text(size = 14, face = "bold"))
 
 #save the figure 
-ggsave(here("plots", "Figure3_v0.pdf"), width = 16, height = 16, units = "cm", dpi = 300, scale = 1.3)
+ggsave(here("plots", "Figure3_v1.pdf"), width = 18, height = 18, units = "cm", dpi = 300, scale = 1.3)
 
 ```
 
@@ -418,6 +422,7 @@ fig4A <- countries_overlap %>% filter(freq > 1) %>%
 
 fig4A
 #Note: by first author country, only countries with >1 paper
+
 ```
 
 ```{r fig4B plot country locations worldmap}
@@ -472,18 +477,19 @@ fig4B <- ggplot() +
 
 fig4B
 #Note: data by first author country, global and unclear locations ignored
+
 ```
 
 ```{r fig4 assemble}
 #assemble the panels
 
 fig4A / fig4B +
-  plot_layout(ncol = 1, nrow = 2, heights = c(2, 1)) +
+  plot_layout(ncol = 1, nrow = 2, heights = c(3, 1)) +
   plot_annotation(tag_levels = "A") &
   theme(plot.tag.position = c(0, 0.98), plot.tag = element_text(size = 14, face = "bold"))
 
 #save the figure 
-ggsave(here("plots", "Figure4_v0.pdf"), width = 16, height = 20, units = "cm", dpi = 300, scale = 1.3)
+ggsave(here("plots", "Figure4_v1.pdf"), width = 16, height = 20, units = "cm", dpi = 300, scale = 1.2)
 
 ```
 
@@ -539,7 +545,7 @@ fig5A / fig5B +
   theme(plot.tag.position = c(0, 0.98), plot.tag = element_text(size = 14, face = "bold"))
 
 #save the figure 
-ggsave(here("plots", "Figure5_v0.pdf"), width = 16, height = 12, units = "cm", dpi = 300, scale = 1.3)
+ggsave(here("plots", "Figure5_v1.pdf"), width = 16, height = 12, units = "cm", dpi = 300, scale = 1.3)
 
 ```
 
@@ -584,8 +590,8 @@ fig6A <- ggplot(table_unclear_long, aes(fill = reporting, y = value, x = variabl
   labs(x = "", y = "Proportion", title = "Reporting quality of study aspects?") #species names not extracted from multi-species studies
 
 fig6A
-
 #Note: assessed as relevant and including when inferred from other sources
+
 ```
 
 ```{r fig6B plot code sharing}
@@ -605,8 +611,8 @@ fig6B <- rawdata_incl %>%
   labs(x = "", y = "Article count", title = "Was analysis code shared?")
 
 fig6B
-
 #Note: not checking if code complete or working
+
 ```
 
 ```{r fig6 assemble}
@@ -618,7 +624,7 @@ fig6A / fig6B +
   theme(plot.tag.position = c(0, 0.98), plot.tag = element_text(size = 14, face = "bold"))
 
 #save the figure 
-ggsave(here("plots", "Figure6_v0.pdf"), width = 16, height = 8, units = "cm", dpi = 300, scale = 1.3)
+ggsave(here("plots", "Figure6_v1.pdf"), width = 16, height = 8, units = "cm", dpi = 300, scale = 1.3)
 
 ```
 
