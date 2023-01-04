@@ -2,7 +2,7 @@
 title: "Supplementary File 1"
 output: pdf_document
 authors: "M. Lagisz"
-date: "May 2022"
+date: "January 2023"
 editor_options: 
   chunk_output_type: console
 latex_engine: pdflatex
@@ -80,11 +80,13 @@ DOI-based Scopus search string for retrieving articles in the benchmarking set:
 
 ## Literature search   
 
-We run a search in Scopus on 2021/10/10 using a pre-piloted search string (for details on the development including validation set refer a dedicated Notion notebook):   
+We run a search in Scopus on 2021/10/10 using a pre-piloted search string:   
 
 ( TITLE-ABS-KEY ( ( \*automatic\* OR "machine learning" OR "computer learning" OR "deep learning" OR "neural network\*" OR "random forest\*" OR "convolutional neural" OR "convolutional network\*" OR "learning algorithm\*" OR "Support Vector\*" ) AND ( image* OR camera* OR video* OR vision ) AND ( \*wild\* OR population* OR "species identif\*" OR "species label\*" OR "species richness" OR ( behavio* AND within/ 10 classif* ) OR ( behavio* AND within/ 10 recogn* ) ) AND NOT ( "natural language" OR "sign language" OR accelomet* OR clinical* OR industr* OR agricult* OR farm* OR leaf OR husbandry OR food* OR tissue* OR cell* OR cultur* OR wildfire* OR "tree growth" OR forestry OR hydrolog* OR engineer* OR "oxygen species" OR molec* OR bacteria* OR microb* OR chemi* OR spectrom* OR brain* OR drug* OR patient* OR cancer* OR smoking OR disease OR diabet* OR landsat* OR sentinel OR satellite* OR "land cover" OR "land use" OR "vegetation map\*" OR galax\* OR "Google Earth" OR scan* OR "X-ray" OR "health care" OR participant* OR emotion* OR employee* OR speech OR proceedings ) ) ) AND PUBYEAR > 2016    
 
-Retrieved bibliographic records were then downloaded and screened for inclusion.    
+We downloaded 2251 bibliographic records for screening. 
+
+The search was updated on to 2022/12/30 to capture all publications from 2021. The search string above was modified by changing PUBYEAR > 2016 to PUBYEAR = 2021. Out of the 751 downloaded records, weremoved all records that have been already screened in the original search and screened remaining 311 records for inclusion. We also considered additional six publications suggested by one of the manuscript reviewer. After screening, we added all extracted records fro the search update to the original data set and updated all our analyses.
 
 
 ## Inclusion criteria at the title and abstract screening phase   
@@ -104,16 +106,20 @@ Following PICO framework, we included articles if all criteria below were fulfil
 
 
 ## Abstract screening procedure and results   
-We used Rayyan QCRI software to screen unique bibliographic records downloaded from Scopus. Thre researchers (ML, JT, RF) independently performed the screening assessing titles abstracts and keywords of each article. This screening resulted in 225 articles included for full-text assessment and data extraction.   
+We used Rayyan QCRI software to screen unique bibliographic records downloaded from Scopus. Three researchers (ML, JT, RF) independently performed the screening assessing titles abstracts and keywords of each article. This screening resulted in 225 articles included for full-text assessment and data extraction. Search update brought up additional 42 potentially relevant articles for full-text assessment and data extraction.     
 
 ## Inclusion criteria at full-text screening   
 - Full text available   
 - Full-text studies should fulfill the same criteria as defined for the title and abstract screening phase   
 
 ## Full text screening and data extraction   
-Out of the 225 papers included, we obtained full-text for 215 papers.   
-For data extraction we used a two-part custom questionnaire implemented as a Google Form (Table S1). To pilot the form, we randomly selected 14 papers for independent screening aand extraction by three researchers (ML, JT, RF). We resolved disagreements by discussion until consensus was reached, and we refined the questionnaire form before the main round of full-text screening and data extraction.  
-One researcher (ML) performed full-text screening and data extraction for the remaining 195 papers. Second researcher (RF) cross-checked 58 of these papers for accuracy and to potentially resolve cases where information provided in the papers was unclear. We used GoogleSheet to record data checks and any additional comments. There, we also recoded whether a given paper was used in the pilot rounds, and if it was included or excluded from the final dataset, with a note on the main reson for exclusion.  
+Out of the 225 papers provisionally included after title and abstract screening, we obtained full-text for 215 papers from the original search. Search update resulted in 41 new articles with full text that were considered for final eligibility and data extraction. One manuscript reviewer suggested 6 additional articles, of which 2 were already included, 2 were not eligible and 2 were new and potentially eligible.     
+
+For data extraction we used a two-part custom questionnaire implemented as a Google Form (Table S1). To pilot the form, we randomly selected 14 papers for independent screening and extraction by three researchers (ML, JT, RF). We resolved disagreements by discussion until consensus was reached, and we refined the questionnaire form before the main round of full-text screening and data extraction.    
+
+One researcher (ML) performed full-text screening and data extraction for the remaining 195 papers. Second researcher (RF) cross-checked 58 of these papers for accuracy and to potentially resolve cases where information provided in the papers was unclear. Data extraction update was performed by ML.  
+
+We used GoogleSheet to record data checks and any additional comments. There, we also recoded whether a given paper was used in the pilot rounds, and if it was included or excluded from the final dataset, with a note on the main reason for exclusion.  
 
 
 #### Table S1 - full-text assessment and data extraction form 
@@ -141,8 +147,8 @@ Q8. Algorithm type: | [Neural Network; Random forest; Gradient boosting model; S
 Q9. Outcome type:	 | [counting individuals (at given time); individual recognition (re-identification); species recognition/classification (class/object detection); behaviour detection (at given time); tracking (following through space); behaviour classification (changes over time); unclear/other]*  
 Q10. Analysis code | [yes; no; unclear/other]   	
 
-----
-*Note:* * indicates plural variables (i.e. more than one answer option can be chosen).
+*Note:* * indicates plural variables (i.e. more than one answer option can be chosen).   
+----   
 
 Each question in the data extraction form (**Table S1**) was followed by a dedicated comment field used to record any additional details, including relevant quotes from the paper. We excluded any papers that were coded as "no" at questions C1 to C6 (full-text screening questions - whether the paper fulfills our inclusion criteria), i.e. these papers were not subject to any further data extraction and analyses.  
 
@@ -156,15 +162,16 @@ After data extraction additional data were added to the GoogleSheet, as follows:
 - Changed_comment:	how record was changed after cross-checking   
 - Included: whether study was included in the final data set for extraction    
 - Exclusion reason: main reason for excluding study from the final data set for extraction, if excluded     
-- Journal category: based on the journal title and Scimago Journal & Country Rank (https://www.scimagojr.com/). The following journals were categorised as multidisciplinary: "Scientific Reports", "Science Advances", "Proceedings of the National Academy of Sciences of the United States of America". The following journals had "ecology" in SUBJECT AREA AND CATEGORY information, or in their title and were thus classified as "ecology": "Behavioral Ecology and Sociobiology", "Ethology", "Global Ecology and Conservation", "Integrative Zoology", "Mammal Study", "Wildlife Society Bulletin", "Journal of Coastal Research", "Condor", "Methods in Ecology and Evolution", "Environmental Monitoring and Assessment", "Remote Sensing in Ecology and Conservation", "Ornis Fennica", "Ecology and Evolution", "European Journal of Wildlife Research", "Frontiers in Marine Science", "Conservation Biology", "Animals", "Ecological Informatics". The remaining journals were classfied as computer science / technology".   
+- Journal category: based on the journal title and Scimago Journal & Country Rank (https://www.scimagojr.com/). The following journals were categorised as multidisciplinary: "Scientific Reports", "Science Advances", "Proceedings of the National Academy of Sciences of the United States of America", "PLoS ONE". The following journals had "ecology" in SUBJECT AREA AND CATEGORY information, or in their title and were thus classified as "ecology": "Behavioral Ecology and Sociobiology", "Ethology", "Biology", Global Ecology and Conservation", "Integrative Zoology", "Mammal Study", "Mammalian Biology", "Wildlife Society Bulletin", "Journal of Coastal Research", "Condor", "Methods in Ecology and Evolution", "Environmental Monitoring and Assessment", "Remote Sensing in Ecology and Conservation", "Ornis Fennica", "Ecology and Evolution", "European Journal of Wildlife Research", "Frontiers in Marine Science", "Conservation Biology", "Animals", "Ecological Informatics". The remaining journals were classified as computer science / technology".   
 
 
 ## Supplementary Results
 This section contains additional tables and plots complementing results presented in the main text of the manuscript.   
+We screened 257 articles with full-text and extracted data from 223 eligible full-text articles.   
 
 ```{r load raw data, eval = TRUE}
-rawdata <- read_excel(here("data", "mapping_dataset_reconciled.xlsx"), sheet = 1)
-# dim(rawdata) #225 rows 47 columns
+rawdata <- read_excel(here("data", "mapping_dataset_reconciled_2021_new.xlsx"), sheet = 1)
+# dim(rawdata)
 ```
 
 #### Table S2
@@ -262,31 +269,30 @@ names(rawdata_incl) <- c("Title",
 
 # classify journals into comp.sci vs. ecology journals
 rawdata_incl$Journal_discipline <- 
-  recode(rawdata_incl$Journal, 
-         "Behavioral Ecology and Sociobiology" = "ecology", 
-         "Ethology" = "ecology", 
-         "Global Ecology and Conservation" = "ecology", 
-         "Integrative Zoology" = "ecology", 
-         "Mammal Study" = "ecology", 
-         "Wildlife Society Bulletin" = "ecology", 
-         "Journal of Coastal Research" = "ecology", 
-         "Condor" = "ecology", 
-         "Methods in Ecology and Evolution" = "ecology", 
-         "Environmental Monitoring and Assessment" = "ecology", 
-         "Remote Sensing in Ecology and Conservation" = "ecology", 
-         "Ornis Fennica" = "ecology", 
-         "Ecology and Evolution" = "ecology", 
-         "European Journal of Wildlife Research" = "ecology", 
-         "Frontiers in Marine Science" = "ecology", 
-         "Conservation Biology" = "ecology", 
-         "Animals" = "ecology", 
-         "Ecological Informatics" = "ecology", 
-         "Scientific Reports" = "multidisciplinary", 
-         "Science Advances" = "multidisciplinary", 
-         "Proceedings of the National Academy of Sciences of the United States of America" = 
-           "multidisciplinary", 
-         .default = "computer science / technology")
-
+  recode(rawdata_incl$Journal,
+       "Behavioral Ecology and Sociobiology" = "ecology",
+       "Ethology" = "ecology",
+       "Global Ecology and Conservation" = "ecology",
+       "Integrative Zoology" = "ecology",
+       "Mammal Study" = "ecology",
+       "Mammalian Biology" = "ecology",
+       "Wildlife Society Bulletin" = "ecology",
+       "Journal of Coastal Research" = "ecology",
+       "Condor" = "ecology", "Methods in Ecology and Evolution" = "ecology",
+       "Environmental Monitoring and Assessment" = "ecology",
+       "Remote Sensing in Ecology and Conservation" = "ecology",
+       "Ornis Fennica" = "ecology",
+       "Ecology and Evolution" = "ecology",
+       "European Journal of Wildlife Research" = "ecology",
+       "Frontiers in Marine Science" = "ecology",
+       "Conservation Biology" = "ecology",
+       "Biology" = "ecology", "Animals" = "ecology",
+       "Ecological Informatics" = "ecology",
+       "Scientific Reports" = "multidisciplinary",
+       "PLoS One" = "multidisciplinary",
+       "Science Advances" = "multidisciplinary",
+       "Proceedings of the National Academy of Sciences of the United States of America" = "multidisciplinary",
+       .default = "computer science / technology")
 #table(rawdata_incl$Journal_discipline)
 ```
 
@@ -416,7 +422,7 @@ Location_country_sep$Location_country <- as.factor(Location_country_sep$Location
 **Figure S4**  
 A barplot of the counts of articles originating form a given country / larger region. "Global" are usually datasets based on images collected from the Internet or social media.    
 
-```{r plot location country barplot, fig.dim = c(8, 6), eval = TRUE}
+```{r plot location country barplot, fig.dim = c(8, 8), eval = TRUE}
 
 Location_country_sep %>% 
   filter(Location_country!="unclear") %>% 
@@ -427,7 +433,7 @@ Location_country_sep %>%
   geom_bar(stat = "identity", position = "dodge") +
  # geom_text(aes(label = scales::comma(n)), hjust = 0, nudge_y = 1) +
   coord_flip() +
-  scale_y_continuous(breaks = seq(0,30,5)) +
+  scale_y_continuous(breaks = seq(0,50,5)) +
   labs(x = "", y = "Article count", title = "Most popular location country/region?", 
        caption = "Note: some studies used more than one")
 ```
@@ -496,7 +502,7 @@ Algorithm_type_sep %>%
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 1) +
   coord_flip() +
-  scale_y_continuous(breaks = seq(0, 200, 50)) +
+  scale_y_continuous(breaks = seq(0, 250, 50)) +
   labs(x = "", y = "Article count", title = "What types of algorithms were used?", 
        caption = "Note: some studies used more than one")
 ```
@@ -521,7 +527,7 @@ Outcome_type_sep %>%
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 1) +
   coord_flip() +
-  scale_y_continuous(breaks = seq(0, 200, 50)) +
+  scale_y_continuous(breaks = seq(0, 250, 50), limits = c(0, 220)) +
   labs(x = "", y = "Article count", title = "What types of outcomes were analysed?", 
        caption = "Note: some studies used more than one")
 ```
@@ -540,7 +546,7 @@ rawdata_incl %>%
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label = as.integer(scales::comma(n))), hjust = 0, nudge_y = 1) +
   coord_flip() +
-  scale_y_continuous(breaks = seq(0, 200, 50)) +
+  scale_y_continuous(breaks = seq(0, 250, 50)) +
   scale_fill_manual(values = c("#E57E7E", "#C3E57E", "#E5B17E")) + 
   theme(legend.position = "none") + 
   labs(x = "", y = "Article count", title = "What disciplines journals represent?")
@@ -552,7 +558,7 @@ These analyses are based on the information extracted from bibliographic records
 Load and export author affiliation country from bibliographic records (*scopus_AI_1and2.bib*).    
 
 ```{r load bib, eval = TRUE}
-bib <- convert2df(here("data", "scopus_AI_1and2.bib"), dbsource = "wos", format = "bibtex") 
+bib <- convert2df(here("data", "scopus_included_records_2021_updated.bib"), dbsource = "wos", format = "bibtex") 
 
 # Initial data cleaning and merging with manually coded data frame. 
 
@@ -579,7 +585,8 @@ bib[bib$TI2 %like% "REVEALING THE UNKNOWN REALTIME RECOGNITION OF", "TI2"] <-
 #Join the data frames
 bib_title <- left_join(rawdata_incl, bib, by = "TI2")
 results <- biblioAnalysis(bib_title, sep = ";") #this calculates the main bibliometric measures, 
-#sum(results$CountryCollaboration$SCP) #4only 3 multi-country papers out of 173 with data
+#sum(results$CountryCollaboration$SCP) #197 single-country papers
+sum(results$CountryCollaboration$MCP) #3 multi-country papers
 ```
 
 **Figure S9**  

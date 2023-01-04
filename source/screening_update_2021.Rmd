@@ -1,0 +1,78 @@
+---
+title: "Update systematic survey of literature using deep learning for animal image analysis at individual and ecological scales"
+authors: "M. Lagisz"
+date: "January 2023"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+## Overview
+
+This script creates files with the figures for the main text of the manuscript.   
+It is not intended to be knitted.   
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+pacman::p_load(here, magrittr, tidyr, stringr, tidyverse, bibliometrix)
+```
+
+### Load and preprocess article lists data    
+
+```{r load and clean article lists}
+## Load the list of originally screened articles (found on 2021/10/10)
+bib <- convert2df(here("data", "scopus_AI_1and2.bib"), dbsource = "wos", format = "bibtex") #does not load with dbsource = "wos"
+dim(bib) #2259 records
+names(bib)
+
+## Load the list of originally screened articles (found on 2022/12/30, with filter set to 2021)
+bib_new <- convert2df(here("data", "scopus_2021.bib"), dbsource = "wos", format = "bibtex") #does not load with dbsource = "wos"
+dim(bib_new) #751 records from whole 2021
+names(bib_new)
+
+#filter bib to 2021+ only
+bib_old <- bib[bib$PY > 2020, ]
+dim(bib_old) #482 records from 2021
+
+## check overlaps and differences in titles
+length(intersect(bib_old$TI, bib_new$TI)) #440 in both sets
+length(setdiff(bib_old$TI, bib_new$TI)) #42 in old but not in new (might be mismatches in the titles, or changed publication year)
+length(setdiff(bib_new$TI, bib_old$TI)) #310 new records
+
+
+bib_sub <- subset(bib_new, !(bib_new$TI %in% bib_old$TI))
+dim(bib_sub) #311
+
+write_csv(bib_sub, here("data", "scopus_2021_new.csv")) #full bibliographic information for each record
+
+## prepare for screening in Rayyan - reduce and rename columns
+#Allowed: key	title	authors	journal	issn	volume	issue	pages	year	publisher	url	abstract	notes	doi	keywords
+names(bib_sub) #see https://images.webofknowledge.com/images/help/WOS/hs_wos_fieldtags.html
+bib_sub_Rayyan <- data.frame(key = bib_sub$SR,
+                      title	= str_to_sentence(bib_sub$TI),
+                      authors	= str_to_title(bib_sub$AU),
+                      journal	= bib_sub$SO,
+                      issn	= bib_sub$SN,
+                      volume	= bib_sub$VL,
+                      issue	= bib_sub$PN,
+                      pages	= bib_sub$PP,
+                      year	= bib_sub$PY,
+                      publisher	= bib_sub$PU,
+                      url	= bib_sub$url,
+                      abstract	= str_to_sentence(bib_sub$AB),
+                      notes	= bib_sub$LA,
+                      doi	= bib_sub$DI,
+                      keywords= str_to_lower(bib_sub$DE)
+                      )
+ 
+ 
+write_csv(bib_sub_Rayyan, here("data", "scopus_2021_new_screen.csv")) #USE TO SCREEN IN RAYYAN
+
+#Note: 42 out of 311 included for full-text screening
+```
+
+NOTE: 
+New 311 titles and abstracts to be screened in Rayyan. 
+New 42 provisionarly included and additional 6 recommended by a reviewer (of these 6: 2 already included, 2 not on vertebrates and 2 eligible).
+New 31 finally included and extracted using GoogleForm - added to the finala dataset.
