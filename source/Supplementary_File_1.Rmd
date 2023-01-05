@@ -86,7 +86,7 @@ We run a search in Scopus on 2021/10/10 using a pre-piloted search string:
 
 We downloaded 2251 bibliographic records for screening. 
 
-The search was updated on to 2022/12/30 to capture all publications from 2021. The search string above was modified by changing PUBYEAR > 2016 to PUBYEAR = 2021. Out of the 751 downloaded records, weremoved all records that have been already screened in the original search and screened remaining 311 records for inclusion. We also considered additional six publications suggested by one of the manuscript reviewer. After screening, we added all extracted records fro the search update to the original data set and updated all our analyses.
+The search was updated on to 2022/12/30 to capture all publications from 2021. The search string above was modified by changing PUBYEAR > 2016 to PUBYEAR = 2021. Out of the 751 downloaded records, weremoved all records that have been already screened in the original search and screened remaining 311 records for inclusion. We also considered additional six publications suggested by one of the manuscript reviewer. After screening, we added all extracted records from the search update to the original data set and updated all our analyses.
 
 
 ## Inclusion criteria at the title and abstract screening phase   
@@ -113,13 +113,13 @@ We used Rayyan QCRI software to screen unique bibliographic records downloaded f
 - Full-text studies should fulfill the same criteria as defined for the title and abstract screening phase   
 
 ## Full text screening and data extraction   
-Out of the 225 papers provisionally included after title and abstract screening, we obtained full-text for 215 papers from the original search. Search update resulted in 41 new articles with full text that were considered for final eligibility and data extraction. One manuscript reviewer suggested 6 additional articles, of which 2 were already included, 2 were not eligible and 2 were new and potentially eligible.     
+Out of the 225 papers provisionally included after title and abstract screening, we obtained full-text for 215 papers from the original search. Search update resulted in 41 new articles with full text that were considered for final eligibility and data extraction. One manuscript reviewer suggested 6 additional articles, of which 3 were new and potentially eligible.     
 
 For data extraction we used a two-part custom questionnaire implemented as a Google Form (Table S1). To pilot the form, we randomly selected 14 papers for independent screening and extraction by three researchers (ML, JT, RF). We resolved disagreements by discussion until consensus was reached, and we refined the questionnaire form before the main round of full-text screening and data extraction.    
 
 One researcher (ML) performed full-text screening and data extraction for the remaining 195 papers. Second researcher (RF) cross-checked 58 of these papers for accuracy and to potentially resolve cases where information provided in the papers was unclear. Data extraction update was performed by ML.  
 
-We used GoogleSheet to record data checks and any additional comments. There, we also recoded whether a given paper was used in the pilot rounds, and if it was included or excluded from the final dataset, with a note on the main reason for exclusion.  
+We used GoogleSheet to record data checks and any additional comments. There, we also recorded whether a given paper was used in the pilot rounds, and if it was included or excluded from the final dataset, with a note on the main reason for exclusion.  
 
 
 #### Table S1 - full-text assessment and data extraction form 
@@ -420,7 +420,7 @@ Location_country_sep$Location_country <- as.factor(Location_country_sep$Location
 ```
 
 **Figure S4**  
-A barplot of the counts of articles originating form a given country / larger region. "Global" are usually datasets based on images collected from the Internet or social media.    
+A barplot of the counts of articles using images form a given country / larger region. "Global" are usually datasets based on images collected from the Internet or social media.    
 
 ```{r plot location country barplot, fig.dim = c(8, 8), eval = TRUE}
 
@@ -558,7 +558,8 @@ These analyses are based on the information extracted from bibliographic records
 Load and export author affiliation country from bibliographic records (*scopus_AI_1and2.bib*).    
 
 ```{r load bib, eval = TRUE}
-bib <- convert2df(here("data", "scopus_included_records_2021_updated.bib"), dbsource = "wos", format = "bibtex") 
+bib <- convert2df(here("data", "scopus_included_records_2021_updated.bib"), 
+                  dbsource = "wos", format = "bibtex") 
 
 # Initial data cleaning and merging with manually coded data frame. 
 
@@ -610,3 +611,75 @@ CountryCollaboration_long %>%
   labs(x = "", y = "Proportion", title = "Author collaboration type by country?", 
        caption = "SCP: Single Country Publications, MCP: Multiple Country Publications")
 ```
+
+### Code sharing analyses   
+
+Combining manually coded data on code sharing.  
+*Note:* we were not checking if code complete or working) from the full texts with publication year, journal and discipline of a study.      
+
+
+**Figure S10**  
+  
+```{r plot code sharing by year, fig.dim = c(8, 3)}
+#table(rawdata_incl$Analysis_code, useNA = "always")
+
+rawdata_incl %>% 
+  filter(!is.na(Analysis_code)) %>% 
+  count(Analysis_code, Year) %>%
+  ggplot(aes(x = Year, y = n, fill = Analysis_code)) + 
+  geom_area(stat = "identity", position = "fill") +
+  theme_classic() +
+  theme(legend.position = "bottom", 
+        legend.direction = "horizontal", 
+        legend.title = element_blank()) + 
+  scale_fill_manual(values = c("#886EB2", "#E7D4E8"))+ 
+  labs(x = "", y = "Proportion of articles", title = "Code sharing by year")
+
+```
+
+
+**Figure S11**  
+
+```{r plot code sharing by journal discipline, fig.dim = c(8, 3)}
+#table(rawdata_incl$Journal_discipline, rawdata_incl$Analysis_code, useNA = "always") #no NA
+table_code_discipline <- data.frame(table(rawdata_incl$Journal_discipline, rawdata_incl$Analysis_code)) #change to data frame  
+colnames(table_code_discipline) <- c("discipline", "code_shared", "count") #rename table columns 
+table_code_discipline$discipline <- ordered(table_code_discipline$discipline, 
+                                            levels = c("multidisciplinary", "computer science / technology", "ecology")) #reorder levels for plotting
+
+ggplot(table_code_discipline, aes(fill = code_shared, y = count, x = discipline)) + 
+  geom_bar(position = "fill", stat = "identity") +
+  theme_classic() +
+  scale_fill_manual(values = c("#886EB2", "#E7D4E8")) +
+  coord_flip() +
+  theme(legend.position = "right") +
+  labs(x = "", y = "Proportion", title = "Code sharing by journal discipline") 
+
+```
+
+**Figure S12**  
+
+```{r plot code sharing by top9 journals, fig.dim = c(8, 3)}
+
+#get names of journals with at least 3 articles (top 9 journals)
+count(rawdata_incl, Journal) %>%
+  arrange(n) %>% top_n(9) -> top9_journals  
+
+#subset the main dataset to journals with at least 3 articles
+rawdata_incl %>% filter(Journal %in% top9_journals$Journal) -> rawdata_incl_top9j
+
+table_code_top9j <- data.frame(table(rawdata_incl_top9j$Journal, rawdata_incl_top9j$Analysis_code)) #change to data frame  
+colnames(table_code_top9j) <- c("journal", "code_shared", "count") #rename table columns 
+table_code_top9j$journal <- ordered(table_code_top9j$journal, levels = c(top9_journals$Journal)) #reorder levels for plotting
+
+ggplot(table_code_top9j, aes(fill = code_shared, y = count, x = journal)) + 
+  geom_bar(position = "fill", stat = "identity") +
+  theme_classic() +
+  scale_fill_manual(values = c("#886EB2", "#E7D4E8")) +
+  coord_flip() +
+  theme(legend.position = "right") +
+  labs(x = "", y = "Proportion", title = "Code sharing by journal") 
+
+```
+
+*Note:* "Methods in Ecology and Evolution", "Ecological Informatics", "Ecology and Evolution", "Animals" are classfied as ecology journals. Journals with >2 included papers are shown sorted by descending frequency order.

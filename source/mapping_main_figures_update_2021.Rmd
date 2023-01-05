@@ -190,7 +190,6 @@ myspecies <- unique(myspecies_data$Study_species)
 
 ## Using *rotl* package to retrieve synthetic species tree from Open Tree of Life
 # taxa <- tnrs_match_names(names = myspecies)
-# dim(taxa) #13 species
 # table(taxa$approximate_match) #1 approximate match 
 # taxa[taxa$approximate_match==TRUE, ] #delphinus spp.  to Delphineis sp. (this will throw an error if not fixed)
 #replace with Cephalorhynchus hectori (Hector's dolphin)
